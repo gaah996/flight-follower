@@ -1,8 +1,7 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src",
+    "noEmit": true,
     "baseUrl": ".",
     "paths": {
       "@ff/shared": ["../shared/types.ts"],
@@ -10,5 +9,5 @@
     },
     "types": ["node"]
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "../shared/types.ts"]
 }
