@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "dev:replay": "tsx watch ../scripts/dev-telemetry-replay.ts",
+    "dev:record": "tsx ../scripts/dev-telemetry-record.ts",
     "start": "tsx src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest"

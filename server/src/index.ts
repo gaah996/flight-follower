@@ -1,4 +1,6 @@
-import { join, resolve } from 'node:path';
+import { createWriteStream, type WriteStream } from 'node:fs';
+import { mkdir } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Aggregator } from './state/aggregator.js';
 import { SimBridge } from './sim-bridge/client.js';
@@ -10,7 +12,8 @@ export type StartOptions = {
   staticPath: string;
   port: number;
   host?: string;
-  disableSim?: boolean; // used by dev-telemetry-replay
+  disableSim?: boolean;  // used by dev-telemetry-replay
+  recordPath?: string;   // if set, append each RawTelemetry as JSONL
 };
 
 export type RunningServer = {
@@ -32,6 +35,16 @@ export async function start(opts: StartOptions): Promise<RunningServer> {
     void simBridge.connect();
   }
 
+  let recordStream: WriteStream | null = null;
+  if (opts.recordPath && simBridge) {
+    await mkdir(dirname(opts.recordPath), { recursive: true });
+    recordStream = createWriteStream(opts.recordPath, { flags: 'a' });
+    simBridge.on('telemetry', (t) => {
+      recordStream?.write(`${JSON.stringify(t)}\n`);
+    });
+    console.log(`[record] appending telemetry to ${opts.recordPath}`);
+  }
+
   const app = await buildHttpApp({
     aggregator,
     settingsPath: opts.configPath,
@@ -47,6 +60,7 @@ export async function start(opts: StartOptions): Promise<RunningServer> {
     close: async () => {
       stopWs();
       simBridge?.stop();
+      recordStream?.end();
       await app.close();
     },
   };
@@ -61,6 +75,7 @@ if (invokedDirectly) {
     configPath: process.env.FF_CONFIG_PATH ?? join(repoRoot, 'server', '.data', 'settings.json'),
     staticPath: process.env.FF_STATIC_PATH ?? join(repoRoot, 'web', 'dist'),
     port: Number(process.env.FF_PORT ?? 4444),
+    recordPath: process.env.FF_RECORD_PATH,
   };
   start(defaults).catch((err) => {
     console.error('failed to start', err);
