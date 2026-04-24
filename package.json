@@ -1,0 +1,19 @@
+{
+  "name": "flight-follower",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["shared", "server", "web"],
+  "scripts": {
+    "dev:server": "npm --workspace server run dev",
+    "dev:web": "npm --workspace web run dev",
+    "dev:replay": "npm --workspace server run dev:replay",
+    "dev:record": "npm --workspace server run dev:record --",
+    "test": "npm --workspace server run test",
+    "build": "npm --workspace web run build",
+    "typecheck": "tsc -p server && tsc -p web"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

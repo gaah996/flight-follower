@@ -1,0 +1,7 @@
+{"timestamp":0,"position":{"lat":0,"lon":0},"altitude":{"msl":0},"speed":{"ground":0,"indicated":0,"mach":0},"heading":{"magnetic":90},"verticalSpeed":0,"wind":{"direction":0,"speed":0},"onGround":true}
+{"timestamp":5000,"position":{"lat":0,"lon":0.05},"altitude":{"msl":500},"speed":{"ground":180,"indicated":160,"mach":0.25},"heading":{"magnetic":90},"verticalSpeed":1800,"wind":{"direction":10,"speed":15},"onGround":false}
+{"timestamp":10000,"position":{"lat":0,"lon":0.15},"altitude":{"msl":3000},"speed":{"ground":220,"indicated":200,"mach":0.33},"heading":{"magnetic":90},"verticalSpeed":1500,"wind":{"direction":10,"speed":15},"onGround":false}
+{"timestamp":15000,"position":{"lat":0,"lon":0.30},"altitude":{"msl":8000},"speed":{"ground":300,"indicated":250,"mach":0.45},"heading":{"magnetic":90},"verticalSpeed":1200,"wind":{"direction":20,"speed":20},"onGround":false}
+{"timestamp":20000,"position":{"lat":0,"lon":0.50},"altitude":{"msl":15000},"speed":{"ground":400,"indicated":280,"mach":0.62},"heading":{"magnetic":88},"verticalSpeed":1000,"wind":{"direction":25,"speed":25},"onGround":false}
+{"timestamp":25000,"position":{"lat":0,"lon":0.80},"altitude":{"msl":25000},"speed":{"ground":450,"indicated":290,"mach":0.75},"heading":{"magnetic":92},"verticalSpeed":800,"wind":{"direction":30,"speed":30},"onGround":false}
+{"timestamp":30000,"position":{"lat":0,"lon":1.20},"altitude":{"msl":35000},"speed":{"ground":470,"indicated":280,"mach":0.79},"heading":{"magnetic":90},"verticalSpeed":0,"wind":{"direction":30,"speed":40},"onGround":false}
