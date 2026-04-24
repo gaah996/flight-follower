@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { RawTelemetry } from '@ff/shared';
+import type { FlightPlan, RawTelemetry } from '@ff/shared';
 import { Aggregator } from './aggregator.js';
 
 function telem(partial: Partial<RawTelemetry> & Pick<RawTelemetry, 'timestamp' | 'position' | 'onGround'>): RawTelemetry {
@@ -83,5 +83,52 @@ describe('Aggregator basics', () => {
     a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 0, lon: 0 }, onGround: true }));
     a.ingestTelemetry(telem({ timestamp: 100, position: { lat: 0, lon: 0.001 }, onGround: true }));
     expect(count).toBe(2);
+  });
+});
+
+const PLAN: FlightPlan = {
+  fetchedAt: 0,
+  origin: { icao: 'AAAA', lat: 0, lon: 0 },
+  destination: { icao: 'BBBB', lat: 0, lon: 10 },
+  waypoints: [
+    { ident: 'W1', lat: 0, lon: 2 },
+    { ident: 'W2', lat: 0, lon: 5 },
+    { ident: 'W3', lat: 0, lon: 8 },
+  ],
+};
+
+describe('Aggregator progress', () => {
+  it('has null progress when no plan is set', () => {
+    const a = new Aggregator();
+    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 0, lon: 0 }, onGround: false, speed: { ground: 200, indicated: 200, mach: 0.3 } }));
+    const s = a.getState();
+    expect(s.progress.nextWaypoint).toBeNull();
+    expect(s.progress.distanceToNextNm).toBeNull();
+    expect(s.progress.distanceToDestNm).toBeNull();
+  });
+
+  it('picks the first unpassed waypoint when a plan is set', () => {
+    const a = new Aggregator();
+    a.setPlan(PLAN);
+    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 0, lon: 0 }, onGround: false, speed: { ground: 200, indicated: 200, mach: 0.3 } }));
+    const s = a.getState();
+    expect(s.progress.nextWaypoint?.ident).toBe('W1');
+    expect(s.progress.distanceToNextNm).toBeGreaterThan(0);
+    expect(s.progress.distanceToDestNm).toBeGreaterThan(s.progress.distanceToNextNm ?? 0);
+  });
+
+  it('advances nextWaypoint after passing W1', () => {
+    const a = new Aggregator();
+    a.setPlan(PLAN);
+    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 0, lon: 2.001 }, onGround: false, speed: { ground: 200, indicated: 200, mach: 0.3 } }));
+    expect(a.getState().progress.nextWaypoint?.ident).toBe('W2');
+  });
+
+  it('computes ETE using ground speed', () => {
+    const a = new Aggregator();
+    a.setPlan(PLAN);
+    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 0, lon: 0 }, onGround: false, speed: { ground: 600, indicated: 600, mach: 0.9 } }));
+    const s = a.getState();
+    expect(s.progress.eteToDestSec).toBeGreaterThan(0);
   });
 });

@@ -1,8 +1,20 @@
 import { EventEmitter } from 'node:events';
-import type { FlightPlan, FlightState, RawTelemetry } from '@ff/shared';
+import type { FlightPlan, FlightProgress, FlightState, RawTelemetry } from '@ff/shared';
+import { haversineNm } from '../route-math/distance.js';
+import { advancePassedIndex, distanceToWaypointNm, eteSeconds } from '../route-math/progress.js';
 
 const BREADCRUMB_INTERVAL_MS = 5000;
 const HEADING_DELTA_DEG = 2;
+const WAYPOINT_PASS_THRESHOLD_NM = 2;
+
+const EMPTY_PROGRESS: FlightProgress = {
+  nextWaypoint: null,
+  distanceToNextNm: null,
+  eteToNextSec: null,
+  distanceToDestNm: null,
+  eteToDestSec: null,
+  flightTimeSec: null,
+};
 
 export class Aggregator extends EventEmitter {
   private state: FlightState = {
@@ -10,19 +22,13 @@ export class Aggregator extends EventEmitter {
     telemetry: null,
     plan: null,
     breadcrumb: [],
-    progress: {
-      nextWaypoint: null,
-      distanceToNextNm: null,
-      eteToNextSec: null,
-      distanceToDestNm: null,
-      eteToDestSec: null,
-      flightTimeSec: null,
-    },
+    progress: { ...EMPTY_PROGRESS },
   };
   private lastBreadcrumbAt = 0;
   private lastBreadcrumbHeading: number | null = null;
   private takeoffAt: number | null = null;
   private wasOnGround: boolean | null = null;
+  private passedIndex = -1;
 
   setConnected(connected: boolean): void {
     if (this.state.connected === connected) return;
@@ -31,7 +37,8 @@ export class Aggregator extends EventEmitter {
   }
 
   setPlan(plan: FlightPlan): void {
-    this.state = { ...this.state, plan };
+    this.passedIndex = -1;
+    this.state = { ...this.state, plan, progress: this.computeProgress(this.state.telemetry, plan) };
     this.emit('state', this.state);
     this.emit('plan', plan);
   }
@@ -39,20 +46,41 @@ export class Aggregator extends EventEmitter {
   ingestTelemetry(t: RawTelemetry): void {
     const breadcrumb = this.updateBreadcrumb(t);
     this.updateTakeoffState(t);
-    const flightTimeSec =
-      this.takeoffAt == null ? null : Math.max(0, (t.timestamp - this.takeoffAt) / 1000);
+    const progress = this.computeProgress(t, this.state.plan);
 
     this.state = {
       ...this.state,
       telemetry: t,
       breadcrumb,
-      progress: { ...this.state.progress, flightTimeSec },
+      progress,
     };
     this.emit('state', this.state);
   }
 
   getState(): FlightState {
     return this.state;
+  }
+
+  private computeProgress(t: RawTelemetry | null, plan: FlightPlan | null): FlightProgress {
+    const flightTimeSec =
+      t == null || this.takeoffAt == null ? null : Math.max(0, (t.timestamp - this.takeoffAt) / 1000);
+    if (t == null || plan == null) {
+      return { ...EMPTY_PROGRESS, flightTimeSec };
+    }
+    this.passedIndex = advancePassedIndex(t.position, plan.waypoints, this.passedIndex, WAYPOINT_PASS_THRESHOLD_NM);
+    const nextIdx = this.passedIndex + 1;
+    const nextWp = plan.waypoints[nextIdx] ?? null;
+    const distNext = nextWp ? distanceToWaypointNm(t.position, nextWp) : null;
+    const distDest = haversineNm(t.position.lat, t.position.lon, plan.destination.lat, plan.destination.lon);
+    const gs = t.speed.ground;
+    return {
+      nextWaypoint: nextWp,
+      distanceToNextNm: distNext,
+      eteToNextSec: distNext == null ? null : eteSeconds(distNext, gs),
+      distanceToDestNm: distDest,
+      eteToDestSec: eteSeconds(distDest, gs),
+      flightTimeSec,
+    };
   }
 
   private updateBreadcrumb(t: RawTelemetry): typeof this.state.breadcrumb {
