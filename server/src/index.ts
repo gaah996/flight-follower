@@ -1,7 +1,7 @@
 import { createWriteStream, type WriteStream } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Aggregator } from './state/aggregator.js';
 import { SimBridge } from './sim-bridge/client.js';
 import { buildHttpApp } from './transport/http.js';
@@ -67,7 +67,11 @@ export async function start(opts: StartOptions): Promise<RunningServer> {
 }
 
 // CLI launcher — only runs when invoked directly.
-const invokedDirectly = import.meta.url === `file://${process.argv[1]}`;
+// Use pathToFileURL on argv[1] so the comparison works on Windows,
+// where the path uses backslashes and a drive letter.
+const entryArg = process.argv[1];
+const invokedDirectly =
+  entryArg !== undefined && import.meta.url === pathToFileURL(entryArg).href;
 if (invokedDirectly) {
   const here = fileURLToPath(new URL('.', import.meta.url));
   const repoRoot = resolve(here, '..', '..');
