@@ -37,4 +37,24 @@ describe('parseSimbriefOfp', () => {
   it('rejects input missing required fields', () => {
     expect(() => parseSimbriefOfp({})).toThrow();
   });
+
+  it('extracts airport names when present', () => {
+    const plan = parseSimbriefOfp(fixture);
+    expect(plan.origin.name).toBe('London Heathrow');
+    expect(plan.destination.name).toBe('Madrid Barajas');
+    expect(plan.alternate?.name).toBe('Barcelona El Prat');
+  });
+
+  it('parses scheduled out/in as epoch ms', () => {
+    const plan = parseSimbriefOfp(fixture);
+    expect(plan.scheduledOut).toBe(1714053600 * 1000);
+    expect(plan.scheduledIn).toBe(1714060800 * 1000);
+  });
+
+  it('omits scheduled times when the OFP lacks a times block', () => {
+    const { times: _ignored, ...withoutTimes } = fixture;
+    const plan = parseSimbriefOfp(withoutTimes);
+    expect(plan.scheduledOut).toBeUndefined();
+    expect(plan.scheduledIn).toBeUndefined();
+  });
 });
