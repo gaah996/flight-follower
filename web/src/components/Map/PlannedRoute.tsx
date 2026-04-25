@@ -25,10 +25,16 @@ export function PlannedRoute() {
         </CircleMarker>
       ))}
       <CircleMarker center={[plan.origin.lat, plan.origin.lon]} radius={6} pathOptions={{ color: '#059669', fillColor: '#059669', fillOpacity: 1 }}>
-        <Tooltip permanent direction="top" offset={[0, -8]}>{plan.origin.icao}</Tooltip>
+        <Tooltip permanent direction="top" offset={[0, -8]}>
+          <strong>{plan.origin.icao}</strong>
+          {plan.origin.name && <div style={{ fontSize: '0.85em', opacity: 0.85 }}>{plan.origin.name}</div>}
+        </Tooltip>
       </CircleMarker>
       <CircleMarker center={[plan.destination.lat, plan.destination.lon]} radius={6} pathOptions={{ color: '#dc2626', fillColor: '#dc2626', fillOpacity: 1 }}>
-        <Tooltip permanent direction="top" offset={[0, -8]}>{plan.destination.icao}</Tooltip>
+        <Tooltip permanent direction="top" offset={[0, -8]}>
+          <strong>{plan.destination.icao}</strong>
+          {plan.destination.name && <div style={{ fontSize: '0.85em', opacity: 0.85 }}>{plan.destination.name}</div>}
+        </Tooltip>
       </CircleMarker>
     </>
   );
