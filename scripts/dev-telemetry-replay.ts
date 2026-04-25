@@ -11,13 +11,24 @@ async function main() {
   const tickMs = Number(process.env.REPLAY_TICK_MS ?? 500);
   const startMs = Number(process.env.REPLAY_START_MS ?? 0);
 
+  if (Number.isNaN(startMs)) {
+    console.error(`replay: REPLAY_START_MS="${process.env.REPLAY_START_MS}" is not a number.`);
+    process.exit(1);
+  }
+
+  if (startMs < 0) {
+    console.warn(`replay: REPLAY_START_MS=${startMs} is negative; ignoring (forward-only seek).`);
+  }
+
   const lines = readFileSync(fixturePath, 'utf8').split('\n').filter(Boolean);
   const allEvents: RawTelemetry[] = lines.map((l) => JSON.parse(l) as RawTelemetry);
   const firstTs = allEvents[0]?.timestamp ?? 0;
   const skipIdx = startMs > 0
     ? allEvents.findIndex((e) => e.timestamp - firstTs >= startMs)
     : 0;
-  const events = skipIdx > 0 ? allEvents.slice(skipIdx) : allEvents;
+  // findIndex returns -1 if startMs is past the end of the fixture; treat that
+  // as an empty event list so the "skipped past end" guard below fires.
+  const events = skipIdx >= 0 ? allEvents.slice(skipIdx) : [];
   const skipped = allEvents.length - events.length;
 
   if (events.length === 0) {
