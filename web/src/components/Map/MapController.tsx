@@ -11,7 +11,11 @@ export function MapController() {
   const setLastView = useViewStore((s) => s.setLastView);
   const telemetry = useFlightStore((s) => s.state.telemetry);
   const plan = useFlightStore((s) => s.state.plan);
-  const hasOverviewFitted = useRef(false);
+  // If sessionStorage has a saved view, we're rehydrating from a reload — skip
+  // the first auto-fit so the user's last view wins. Subsequent clicks on
+  // Overview still refit (handled by the prevMode effect below).
+  const hasOverviewFitted = useRef(useViewStore.getState().lastCenter !== null);
+  const prevMode = useRef(mode);
   const programmatic = useRef(false);
 
   useMapEvents({
@@ -29,9 +33,22 @@ export function MapController() {
     },
   });
 
-  // Fit to origin+destination on plan load or explicit overview.
+  // When the user transitions INTO overview (via the toggle), allow one refit.
+  // Declared before the fit effect so the reset takes effect first on the
+  // same render that the fit effect would otherwise read the old value.
+  useEffect(() => {
+    if (mode === 'overview' && prevMode.current !== 'overview') {
+      hasOverviewFitted.current = false;
+    }
+    prevMode.current = mode;
+  }, [mode]);
+
+  // Fit to origin+destination on plan load or explicit overview, but only
+  // once per "request to fit" — the guard prevents overriding a persisted or
+  // user-positioned view every time the plan re-arrives via WS.
   useEffect(() => {
     if (mode !== 'overview' || !plan) return;
+    if (hasOverviewFitted.current) return;
     const bounds = new LatLngBounds(
       latLng(plan.origin.lat, plan.origin.lon),
       latLng(plan.destination.lat, plan.destination.lon),
