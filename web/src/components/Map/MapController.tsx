@@ -18,10 +18,6 @@ export function MapController() {
       if (programmatic.current) return;
       if (mode !== 'manual') setMode('manual');
     },
-    zoomstart: () => {
-      if (programmatic.current) return;
-      if (mode !== 'manual') setMode('manual');
-    },
   });
 
   // Fit to origin+destination on plan load or explicit overview.
