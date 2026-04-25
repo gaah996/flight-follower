@@ -51,7 +51,7 @@ FF_STATIC_PATH=/tmp npm run dev:replay
 npm --workspace web run dev
 ```
 
-You'll see an aircraft walking eastward from 0°N 0°E with a breadcrumb trail and ticking values.
+You'll see an aircraft flying a circuit around EDDB (Berlin Brandenburg) with a breadcrumb trail and ticking values.
 
 ### Production / LAN access
 
@@ -75,6 +75,7 @@ All settings are environment variables. None are required — each has a sensibl
 | `FF_STATIC_PATH` | `web/dist` | Static React bundle to serve |
 | `FF_RECORD_PATH` | _unset_ | If set, the server appends each telemetry event to this JSONL file |
 | `REPLAY_TICK_MS` | `500` | Replay harness tick interval |
+| `REPLAY_START_MS` | `0` | Replay harness: ms of fixture wall-clock to skip before broadcasting |
 
 The Simbrief pilot ID is set via the in-app Settings dialog and stored in `server/.data/settings.json` (gitignored).
 
@@ -137,7 +138,7 @@ flight-follower/
 ├── scripts/
 │   ├── dev-telemetry-replay.ts
 │   ├── dev-telemetry-record.ts
-│   └── fixtures/replay-short.jsonl
+│   └── fixtures/replay-eddb-circuit.jsonl
 └── docs/superpowers/     # Design spec and implementation plan
 ```
 

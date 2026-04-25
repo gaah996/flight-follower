@@ -15,7 +15,7 @@ async function main() {
   const fixtureArg = process.argv[2];
   const fixturePath = fixtureArg
     ? resolve(userCwd, fixtureArg)
-    : join(here, 'fixtures', 'replay-short.jsonl');
+    : join(here, 'fixtures', 'replay-eddb-circuit.jsonl');
   const tickMs = Number(process.env.REPLAY_TICK_MS ?? 500);
   const startMs = Number(process.env.REPLAY_START_MS ?? 0);
 
