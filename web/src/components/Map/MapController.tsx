@@ -8,6 +8,7 @@ export function MapController() {
   const map = useMap();
   const mode = useViewStore((s) => s.mode);
   const setMode = useViewStore((s) => s.setMode);
+  const setLastView = useViewStore((s) => s.setLastView);
   const telemetry = useFlightStore((s) => s.state.telemetry);
   const plan = useFlightStore((s) => s.state.plan);
   const hasOverviewFitted = useRef(false);
@@ -17,6 +18,14 @@ export function MapController() {
     dragstart: () => {
       if (programmatic.current) return;
       if (mode !== 'manual') setMode('manual');
+    },
+    moveend: () => {
+      // Fires after both pan and zoom finish (zoom is a kind of move). We
+      // persist on every moveend, including programmatic ones — any stale
+      // programmatic position gets overwritten the moment the user acts or
+      // telemetry advances after the next reload.
+      const c = map.getCenter();
+      setLastView([c.lat, c.lng], map.getZoom());
     },
   });
 
