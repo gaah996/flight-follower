@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchSimbriefPlan, getSettings, saveSettings } from '../api/rest.js';
+import { useViewStore } from '../store/view.js';
 
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const [userId, setUserId] = useState('');
@@ -28,6 +29,9 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
     try {
       await saveSettings({ simbriefUserId: userId.trim() || null });
       await fetchSimbriefPlan();
+      // Frame the freshly-imported route. WS reconnects don't trigger this
+      // because the WS handler no longer touches view mode.
+      useViewStore.getState().setMode('overview');
       setStatus('Plan fetched.');
     } catch (err) {
       setStatus(`Fetch failed: ${(err as Error).message}`);
