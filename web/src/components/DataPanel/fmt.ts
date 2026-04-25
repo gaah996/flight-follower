@@ -13,6 +13,14 @@ export function fmtDurationSec(sec: number | null | undefined): string {
   return `${hh}:${mm}:${ss}`;
 }
 
-export function fmtLatLon(v: number | null | undefined): string {
-  return v == null ? dash : v.toFixed(4);
+export function fmtLatHemi(v: number | null | undefined): string {
+  if (v == null) return dash;
+  const hemi = v >= 0 ? 'N' : 'S';
+  return `${Math.abs(v).toFixed(2)}° ${hemi}`;
+}
+
+export function fmtLonHemi(v: number | null | undefined): string {
+  if (v == null) return dash;
+  const hemi = v >= 0 ? 'E' : 'W';
+  return `${Math.abs(v).toFixed(2)}° ${hemi}`;
 }
