@@ -120,8 +120,11 @@ describe('Aggregator progress', () => {
   it('advances nextWaypoint after passing W1', () => {
     const a = new Aggregator();
     a.setPlan(PLAN);
-    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 1.1, lon: 2.001 }, onGround: false, speed: { ground: 200, indicated: 200, mach: 0.3 } }));
-    expect(a.getState().progress.nextWaypoint?.ident).toBe('W1');
+    // lat: 0 here is fine: lon: 2.001 already places us outside the (0,0)
+    // filter box on the longitude axis, and we need to be at W1 (which sits
+    // on the equator in PLAN) for the pass-detection to fire.
+    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 0, lon: 2.001 }, onGround: false, speed: { ground: 200, indicated: 200, mach: 0.3 } }));
+    expect(a.getState().progress.nextWaypoint?.ident).toBe('W2');
   });
 
   it('computes ETE using ground speed', () => {
