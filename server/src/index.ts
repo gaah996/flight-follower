@@ -41,6 +41,9 @@ export async function start(opts: StartOptions): Promise<RunningServer> {
   let recordHeartbeat: NodeJS.Timeout | null = null;
   let recordTotal = 0;
   let absRecordPath: string | null = null;
+  if (opts.recordPath && !simBridge) {
+    console.warn('[record] recordPath is set but disableSim is true — recording is disabled');
+  }
   if (opts.recordPath && simBridge) {
     absRecordPath = resolve(opts.recordPath);
     await mkdir(dirname(absRecordPath), { recursive: true });
@@ -79,17 +82,23 @@ export async function start(opts: StartOptions): Promise<RunningServer> {
     close: async () => {
       stopWs();
       if (recordHeartbeat) clearInterval(recordHeartbeat);
-      if (recordStream && absRecordPath) {
+      simBridge?.stop();
+      if (recordStream) {
+        await new Promise<void>((res, rej) =>
+          recordStream!.end((err: Error | null | undefined) => (err ? rej(err) : res())),
+        );
+      }
+      if (absRecordPath) {
         console.log(`[record] flushed ${recordTotal} total events to ${absRecordPath}`);
       }
-      simBridge?.stop();
-      recordStream?.end();
       await app.close();
     },
   };
 }
 
 // CLI launcher — only runs when invoked directly.
+// Use pathToFileURL on argv[1] so the comparison works on Windows,
+// where the path uses backslashes and a drive letter.
 const entryArg = process.argv[1];
 const invokedDirectly =
   entryArg !== undefined && import.meta.url === pathToFileURL(entryArg).href;
