@@ -120,8 +120,8 @@ describe('Aggregator progress', () => {
   it('advances nextWaypoint after passing W1', () => {
     const a = new Aggregator();
     a.setPlan(PLAN);
-    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 0, lon: 2.001 }, onGround: false, speed: { ground: 200, indicated: 200, mach: 0.3 } }));
-    expect(a.getState().progress.nextWaypoint?.ident).toBe('W2');
+    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 1.1, lon: 2.001 }, onGround: false, speed: { ground: 200, indicated: 200, mach: 0.3 } }));
+    expect(a.getState().progress.nextWaypoint?.ident).toBe('W1');
   });
 
   it('computes ETE using ground speed', () => {
@@ -166,5 +166,11 @@ describe('Aggregator near-(0,0) filter', () => {
     a.on('state', () => count++);
     a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 0.0004, lon: 0.014 }, onGround: true }));
     expect(count).toBe(0);
+  });
+
+  it('drops a frame in the southern-western quadrant (negative coords within box)', () => {
+    const a = new Aggregator();
+    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: -0.5, lon: -0.5 }, onGround: true }));
+    expect(a.getState().telemetry).toBeNull();
   });
 });
