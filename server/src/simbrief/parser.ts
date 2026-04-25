@@ -17,18 +17,16 @@ const FixSchema = z.object({
   altitude_feet: numFromStr.optional(),
 });
 
-const TimesSchema = z
-  .object({
-    sched_out: numFromStr.optional(),
-    sched_in: numFromStr.optional(),
-  })
-  .optional();
+const TimesSchema = z.object({
+  sched_out: numFromStr.optional(),
+  sched_in: numFromStr.optional(),
+});
 
 const OfpSchema = z.object({
   origin: AirportSchema,
   destination: AirportSchema,
   alternate: AirportSchema.optional(),
-  times: TimesSchema,
+  times: TimesSchema.optional(),
   navlog: z.object({
     fix: z.array(FixSchema),
   }),

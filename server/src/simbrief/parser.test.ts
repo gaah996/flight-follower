@@ -57,4 +57,15 @@ describe('parseSimbriefOfp', () => {
     expect(plan.scheduledOut).toBeUndefined();
     expect(plan.scheduledIn).toBeUndefined();
   });
+
+  it('omits airport names when absent from the OFP', () => {
+    const withoutNames = {
+      ...fixture,
+      origin: { icao_code: 'EGLL', pos_lat: '51.4706', pos_long: '-0.4619' },
+      destination: { icao_code: 'LEMD', pos_lat: '40.4936', pos_long: '-3.5668' },
+    };
+    const plan = parseSimbriefOfp(withoutNames);
+    expect(plan.origin.name).toBeUndefined();
+    expect(plan.destination.name).toBeUndefined();
+  });
 });
