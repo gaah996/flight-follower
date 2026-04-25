@@ -7,13 +7,15 @@ import { SimBridge } from './sim-bridge/client.js';
 import { buildHttpApp } from './transport/http.js';
 import { attachWsBroadcaster } from './transport/ws.js';
 
+const RECORD_HEARTBEAT_MS = 30_000;
+
 export type StartOptions = {
   configPath: string;
   staticPath: string;
   port: number;
   host?: string;
-  disableSim?: boolean;  // used by dev-telemetry-replay
-  recordPath?: string;   // if set, append each RawTelemetry as JSONL
+  disableSim?: boolean;
+  recordPath?: string;
 };
 
 export type RunningServer = {
@@ -36,13 +38,33 @@ export async function start(opts: StartOptions): Promise<RunningServer> {
   }
 
   let recordStream: WriteStream | null = null;
+  let recordHeartbeat: NodeJS.Timeout | null = null;
+  let recordTotal = 0;
+  let absRecordPath: string | null = null;
+  if (opts.recordPath && !simBridge) {
+    console.warn('[record] recordPath is set but disableSim is true — recording is disabled');
+  }
   if (opts.recordPath && simBridge) {
-    await mkdir(dirname(opts.recordPath), { recursive: true });
-    recordStream = createWriteStream(opts.recordPath, { flags: 'a' });
+    absRecordPath = resolve(opts.recordPath);
+    await mkdir(dirname(absRecordPath), { recursive: true });
+    recordStream = createWriteStream(absRecordPath, { flags: 'a' });
+    let sinceLast = 0;
+    let firstHeartbeat = true;
     simBridge.on('telemetry', (t) => {
       recordStream?.write(`${JSON.stringify(t)}\n`);
+      sinceLast++;
+      recordTotal++;
     });
-    console.log(`[record] appending telemetry to ${opts.recordPath}`);
+    console.log(`[record] writing to ${absRecordPath}`);
+    recordHeartbeat = setInterval(() => {
+      if (firstHeartbeat && sinceLast === 0) {
+        console.warn('[record] no telemetry received in the first 30s — is MSFS running and a flight loaded?');
+      } else {
+        console.log(`[record] +${sinceLast} events (${recordTotal} total)`);
+      }
+      firstHeartbeat = false;
+      sinceLast = 0;
+    }, RECORD_HEARTBEAT_MS);
   }
 
   const app = await buildHttpApp({
@@ -59,8 +81,16 @@ export async function start(opts: StartOptions): Promise<RunningServer> {
     simBridge,
     close: async () => {
       stopWs();
+      if (recordHeartbeat) clearInterval(recordHeartbeat);
       simBridge?.stop();
-      recordStream?.end();
+      if (recordStream) {
+        await new Promise<void>((res, rej) =>
+          recordStream!.end((err: Error | null | undefined) => (err ? rej(err) : res())),
+        );
+      }
+      if (absRecordPath) {
+        console.log(`[record] flushed ${recordTotal} total events to ${absRecordPath}`);
+      }
       await app.close();
     },
   };

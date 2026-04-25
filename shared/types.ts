@@ -9,6 +9,7 @@ export type RawTelemetry = {
   verticalSpeed: number;
   wind: { direction: number; speed: number };
   onGround: boolean;
+  simTimeUtc?: number;
 };
 
 export type Waypoint = {
@@ -22,6 +23,7 @@ export type Airport = {
   icao: string;
   lat: number;
   lon: number;
+  name?: string;
 };
 
 export type FlightPlan = {
@@ -30,6 +32,8 @@ export type FlightPlan = {
   destination: Airport;
   waypoints: Waypoint[];
   alternate?: Airport;
+  scheduledOut?: number;
+  scheduledIn?: number;
 };
 
 export type FlightProgress = {

@@ -51,7 +51,7 @@ FF_STATIC_PATH=/tmp npm run dev:replay
 npm --workspace web run dev
 ```
 
-You'll see an aircraft walking eastward from 0°N 0°E with a breadcrumb trail and ticking values.
+You'll see an aircraft flying a circuit around EDDB (Berlin Brandenburg) with a breadcrumb trail and ticking values.
 
 ### Production / LAN access
 
@@ -75,6 +75,7 @@ All settings are environment variables. None are required — each has a sensibl
 | `FF_STATIC_PATH` | `web/dist` | Static React bundle to serve |
 | `FF_RECORD_PATH` | _unset_ | If set, the server appends each telemetry event to this JSONL file |
 | `REPLAY_TICK_MS` | `500` | Replay harness tick interval |
+| `REPLAY_START_MS` | `0` | Replay harness: ms of fixture wall-clock to skip before broadcasting |
 
 The Simbrief pilot ID is set via the in-app Settings dialog and stored in `server/.data/settings.json` (gitignored).
 
@@ -100,6 +101,20 @@ To replay a saved file later, pass the path as the first arg to the replay scrip
 npm --workspace server exec -- tsx ../scripts/dev-telemetry-replay.ts recordings/<your-flight>.jsonl
 ```
 
+The recording log on startup shows the **resolved absolute path** the file is
+being written to — relative `FF_RECORD_PATH` values are resolved against your
+shell's current directory, not the workspace root. While recording, the
+server prints a heartbeat every 30 s with the number of events appended; if
+the first heartbeat fires with zero events, you'll get a warning suggesting
+MSFS may not be running.
+
+To skip the long stationary preamble of a recording during replay, set
+`REPLAY_START_MS`:
+
+```bash
+REPLAY_START_MS=30000 npm run dev:replay -- recordings/<your-flight>.jsonl
+```
+
 ## Project layout
 
 ```
@@ -123,7 +138,7 @@ flight-follower/
 ├── scripts/
 │   ├── dev-telemetry-replay.ts
 │   ├── dev-telemetry-record.ts
-│   └── fixtures/replay-short.jsonl
+│   └── fixtures/replay-eddb-circuit.jsonl
 └── docs/superpowers/     # Design spec and implementation plan
 ```
 

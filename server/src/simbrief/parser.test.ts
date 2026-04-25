@@ -37,4 +37,35 @@ describe('parseSimbriefOfp', () => {
   it('rejects input missing required fields', () => {
     expect(() => parseSimbriefOfp({})).toThrow();
   });
+
+  it('extracts airport names when present', () => {
+    const plan = parseSimbriefOfp(fixture);
+    expect(plan.origin.name).toBe('London Heathrow');
+    expect(plan.destination.name).toBe('Madrid Barajas');
+    expect(plan.alternate?.name).toBe('Barcelona El Prat');
+  });
+
+  it('parses scheduled out/in as epoch ms', () => {
+    const plan = parseSimbriefOfp(fixture);
+    expect(plan.scheduledOut).toBe(1714053600 * 1000);
+    expect(plan.scheduledIn).toBe(1714060800 * 1000);
+  });
+
+  it('omits scheduled times when the OFP lacks a times block', () => {
+    const { times: _ignored, ...withoutTimes } = fixture;
+    const plan = parseSimbriefOfp(withoutTimes);
+    expect(plan.scheduledOut).toBeUndefined();
+    expect(plan.scheduledIn).toBeUndefined();
+  });
+
+  it('omits airport names when absent from the OFP', () => {
+    const withoutNames = {
+      ...fixture,
+      origin: { icao_code: 'EGLL', pos_lat: '51.4706', pos_long: '-0.4619' },
+      destination: { icao_code: 'LEMD', pos_lat: '40.4936', pos_long: '-3.5668' },
+    };
+    const plan = parseSimbriefOfp(withoutNames);
+    expect(plan.origin.name).toBeUndefined();
+    expect(plan.destination.name).toBeUndefined();
+  });
 });

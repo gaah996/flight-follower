@@ -21,5 +21,5 @@ Items raised during brainstorming sessions that we explicitly chose **not** to d
 
 For traceability — these are not "deferred", they are scheduled:
 
-- **v1.2** — component library + dark mode, DataPanel layout / grouping, wind compass widget, default map tile style refinement, flight info card.
+- **v1.2** — component library + dark mode, DataPanel layout / grouping, wind compass widget, default map tile style refinement, flight info card, **multi-tier position precision** (large 2 dp number with the extra 1–2 decimals rendered smaller / dimmer, e.g. `52.36`<sub>`41`</sub>`° N` — gets the best of "stable to glance at" and "finer detail visible if you look closer"; v1.1 ships flat 2 dp because the typography tiering wants to land with the rest of the design pass).
 - **v1.3** — breadcrumb altitude-coded gradient, skip-waypoint mechanism, TOC / TOD markers, origin → destination progress timeline bar, live ETA derived from `eteToDestSec`.

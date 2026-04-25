@@ -1,6 +1,5 @@
 import type { WsMessage } from '@ff/shared';
 import { useFlightStore } from '../store/flight.js';
-import { useViewStore } from '../store/view.js';
 
 const MAX_BACKOFF_MS = 10_000;
 
@@ -25,9 +24,11 @@ export function connectWebSocket(): () => void {
       if (msg.type === 'state') {
         store.setFlightState(msg.payload);
       } else if (msg.type === 'plan') {
+        // Just store the plan. The view mode reset on plan import lives in
+        // SettingsDialog.onFetch (the user-initiated entry point), so that
+        // WS reconnects (which re-send the existing plan) don't clobber a
+        // persisted mode.
         store.setPlan(msg.payload);
-        // Spec §10: Overview is the default view mode on plan import.
-        useViewStore.getState().setMode('overview');
       } else if (msg.type === 'error') {
         console.warn('[ws error]', msg.payload);
       }

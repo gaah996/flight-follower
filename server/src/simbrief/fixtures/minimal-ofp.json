@@ -1,8 +1,12 @@
 {
   "params": { "time_generated": "1714000000" },
-  "origin": { "icao_code": "EGLL", "pos_lat": "51.4706", "pos_long": "-0.4619" },
-  "destination": { "icao_code": "LEMD", "pos_lat": "40.4936", "pos_long": "-3.5668" },
-  "alternate": { "icao_code": "LEBL", "pos_lat": "41.2971", "pos_long": "2.0785" },
+  "origin": { "icao_code": "EGLL", "pos_lat": "51.4706", "pos_long": "-0.4619", "name": "London Heathrow" },
+  "destination": { "icao_code": "LEMD", "pos_lat": "40.4936", "pos_long": "-3.5668", "name": "Madrid Barajas" },
+  "alternate": { "icao_code": "LEBL", "pos_lat": "41.2971", "pos_long": "2.0785", "name": "Barcelona El Prat" },
+  "times": {
+    "sched_out": "1714053600",
+    "sched_in": "1714060800"
+  },
   "navlog": {
     "fix": [
       { "ident": "MID", "pos_lat": "51.0531", "pos_long": "-0.6250", "altitude_feet": "15000" },

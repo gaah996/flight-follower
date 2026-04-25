@@ -1,10 +1,10 @@
 import { useFlightStore } from '../../store/flight.js';
-import { dash, fmtLatLon } from './fmt.js';
+import { fmtLatHemi, fmtLonHemi } from './fmt.js';
 
 export function PositionCard() {
   const t = useFlightStore((s) => s.state.telemetry);
-  const lat = t ? fmtLatLon(t.position.lat) : dash;
-  const lon = t ? fmtLatLon(t.position.lon) : dash;
+  const lat = fmtLatHemi(t?.position.lat);
+  const lon = fmtLonHemi(t?.position.lon);
   return (
     <Card title="Position">
       <Row label="Lat">{lat}</Row>

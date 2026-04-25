@@ -44,6 +44,12 @@ export class Aggregator extends EventEmitter {
   }
 
   ingestTelemetry(t: RawTelemetry): void {
+    // MSFS reports ~(0,0) on the menu/loading screen. The 1° box around the
+    // origin sits entirely in the Gulf of Guinea — no real flight goes there.
+    if (Math.abs(t.position.lat) < 1 && Math.abs(t.position.lon) < 1) {
+      return;
+    }
+
     const breadcrumb = this.updateBreadcrumb(t);
     this.updateTakeoffState(t);
     const progress = this.computeProgress(t, this.state.plan);

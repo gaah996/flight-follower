@@ -17,10 +17,31 @@ export const SIM_VARS = [
   ['AMBIENT WIND DIRECTION', 'degrees'],
   ['AMBIENT WIND VELOCITY', 'knots'],
   ['SIM ON GROUND', 'bool'],
+  ['ZULU YEAR', 'number'],
+  ['ZULU MONTH OF YEAR', 'number'],
+  ['ZULU DAY OF MONTH', 'number'],
+  ['ZULU TIME', 'seconds'],
 ] as const;
 
 export function buildTelemetry(values: number[], timestamp: number): RawTelemetry {
-  const [lat, lon, alt, gs, ias, mach, hdg, vs, windDir, windVel, onGround] = values as number[];
+  const [
+    lat, lon, alt,
+    gs, ias, mach,
+    hdg, vs,
+    windDir, windVel,
+    onGround,
+    zuluYear, zuluMonth, zuluDay, zuluTime,
+  ] = values as number[];
+
+  // MSFS reports year=0 before a flight is loaded. We treat anything before
+  // 1900 (and any non-finite value) as "no sim time" so the FE falls back to
+  // wall-clock. This project targets present-day airline scenarios; adjust if
+  // historical missions are ever added.
+  const simTimeUtc =
+    Number.isFinite(zuluYear) && (zuluYear as number) >= 1900
+      ? Date.UTC(zuluYear as number, (zuluMonth ?? 1) - 1, zuluDay ?? 1) + (zuluTime ?? 0) * 1000
+      : undefined;
+
   return {
     timestamp,
     position: { lat: lat ?? 0, lon: lon ?? 0 },
@@ -30,5 +51,6 @@ export function buildTelemetry(values: number[], timestamp: number): RawTelemetr
     verticalSpeed: vs ?? 0,
     wind: { direction: windDir ?? 0, speed: windVel ?? 0 },
     onGround: (onGround ?? 0) > 0.5,
+    simTimeUtc,
   };
 }

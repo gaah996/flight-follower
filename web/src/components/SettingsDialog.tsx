@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchSimbriefPlan, getSettings, saveSettings } from '../api/rest.js';
+import { useViewStore } from '../store/view.js';
 
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const [userId, setUserId] = useState('');
@@ -28,6 +29,11 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
     try {
       await saveSettings({ simbriefUserId: userId.trim() || null });
       await fetchSimbriefPlan();
+      // Frame the freshly-imported route. setMode is a no-op when already in
+      // Overview, so we also bump fitOverviewRequest to force the refit.
+      const view = useViewStore.getState();
+      view.setMode('overview');
+      view.requestFitOverview();
       setStatus('Plan fetched.');
     } catch (err) {
       setStatus(`Fetch failed: ${(err as Error).message}`);
