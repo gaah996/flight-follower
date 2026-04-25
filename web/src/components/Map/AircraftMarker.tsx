@@ -1,5 +1,5 @@
 import { divIcon } from 'leaflet';
-import { Marker } from 'react-leaflet';
+import { Marker, Tooltip } from 'react-leaflet';
 import { useFlightStore } from '../../store/flight.js';
 
 const PLANE_PATH =
@@ -7,10 +7,11 @@ const PLANE_PATH =
 
 export function AircraftMarker() {
   const t = useFlightStore((s) => s.state.telemetry);
+  const plan = useFlightStore((s) => s.state.plan);
   if (!t) return null;
   const heading = t.heading.magnetic;
   const html = `
-    <div style="width:24px;height:24px;color:#2563eb;transform:rotate(${heading}deg);transform-origin:center;display:flex;align-items:center;justify-content:center;">
+    <div class="ff-aircraft" style="width:24px;height:24px;transform:rotate(${heading}deg);transform-origin:center;display:flex;align-items:center;justify-content:center;">
       <svg viewBox="0 0 24 24" width="24" height="24" style="display:block;">
         <path fill="currentColor" d="${PLANE_PATH}" />
       </svg>
@@ -22,5 +23,17 @@ export function AircraftMarker() {
     iconSize: [24, 24],
     iconAnchor: [12, 12],
   });
-  return <Marker position={[t.position.lat, t.position.lon]} icon={icon} interactive={false} />;
+
+  const tooltipText =
+    plan?.flightNumber && plan?.aircraftType
+      ? `${plan.flightNumber} · ${plan.aircraftType}`
+      : plan?.flightNumber || plan?.aircraftType || 'Aircraft';
+
+  return (
+    <Marker position={[t.position.lat, t.position.lon]} icon={icon} interactive>
+      <Tooltip direction="top" offset={[0, -16]} opacity={1}>
+        {tooltipText}
+      </Tooltip>
+    </Marker>
+  );
 }

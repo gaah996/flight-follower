@@ -10,9 +10,18 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     />
-    <style>
-      html, body, #root { height: 100%; margin: 0; font-family: system-ui, sans-serif; }
-    </style>
+    <script>
+      // FOUC prevention: read theme from localStorage and set the dark class
+      // on <html> before any styles render. Safe to fail-silent — defaults to
+      // dark per the v1.2 spec.
+      try {
+        var raw = localStorage.getItem('ff:theme');
+        var theme = raw ? JSON.parse(raw).state.theme : 'dark';
+        if (theme === 'dark') document.documentElement.classList.add('dark');
+      } catch (e) {
+        document.documentElement.classList.add('dark');
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

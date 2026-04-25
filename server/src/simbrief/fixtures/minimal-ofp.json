@@ -1,5 +1,17 @@
 {
   "params": { "time_generated": "1714000000" },
+  "general": {
+    "icao_airline": "BAW",
+    "flight_number": "123",
+    "initial_altitude": "36000",
+    "air_distance": "1085",
+    "route_distance": "1101",
+    "route": "MID OKRIX BAN",
+    "route_navigraph": "EGLL DCT MID UN160 OKRIX UM601 BAN LEMD"
+  },
+  "aircraft": {
+    "icao_code": "A320"
+  },
   "origin": { "icao_code": "EGLL", "pos_lat": "51.4706", "pos_long": "-0.4619", "name": "London Heathrow" },
   "destination": { "icao_code": "LEMD", "pos_lat": "40.4936", "pos_long": "-3.5668", "name": "Madrid Barajas" },
   "alternate": { "icao_code": "LEBL", "pos_lat": "41.2971", "pos_long": "2.0785", "name": "Barcelona El Prat" },

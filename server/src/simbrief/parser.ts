@@ -22,7 +22,23 @@ const TimesSchema = z.object({
   sched_in: numFromStr.optional(),
 });
 
+const GeneralSchema = z.object({
+  icao_airline: z.string().optional(),
+  flight_number: z.string().optional(),
+  initial_altitude: numFromStr.optional(),
+  air_distance: numFromStr.optional(),
+  route_distance: numFromStr.optional(),
+  route: z.string().optional(),
+  route_navigraph: z.string().optional(),
+});
+
+const AircraftSchema = z.object({
+  icao_code: z.string().optional(),
+});
+
 const OfpSchema = z.object({
+  general: GeneralSchema.optional(),
+  aircraft: AircraftSchema.optional(),
   origin: AirportSchema,
   destination: AirportSchema,
   alternate: AirportSchema.optional(),
@@ -36,6 +52,15 @@ export function parseSimbriefOfp(raw: unknown): FlightPlan {
   const ofp = OfpSchema.parse(raw);
   const schedOutSec = ofp.times?.sched_out;
   const schedInSec = ofp.times?.sched_in;
+
+  const flightNumber =
+    ofp.general?.icao_airline && ofp.general?.flight_number
+      ? `${ofp.general.icao_airline}${ofp.general.flight_number}`
+      : undefined;
+
+  const totalDistanceNm = ofp.general?.air_distance ?? ofp.general?.route_distance;
+  const routeString = ofp.general?.route_navigraph ?? ofp.general?.route;
+
   return {
     fetchedAt: Date.now(),
     origin: {
@@ -66,5 +91,10 @@ export function parseSimbriefOfp(raw: unknown): FlightPlan {
     })),
     scheduledOut: schedOutSec != null ? schedOutSec * 1000 : undefined,
     scheduledIn: schedInSec != null ? schedInSec * 1000 : undefined,
+    flightNumber,
+    aircraftType: ofp.aircraft?.icao_code,
+    cruiseAltitudeFt: ofp.general?.initial_altitude,
+    totalDistanceNm,
+    routeString,
   };
 }

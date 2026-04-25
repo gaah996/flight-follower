@@ -1,0 +1,78 @@
+@import "tailwindcss";
+@import "@heroui/react/styles";
+@plugin "./hero.ts";
+@source "../../node_modules/@heroui";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-fg: var(--ff-fg);
+  --color-fg-muted: var(--ff-fg-muted);
+  --color-bg: var(--ff-bg);
+  --color-bg-elevated: var(--ff-bg-elevated);
+  --color-border: var(--ff-border);
+  --color-accent: var(--ff-accent);
+}
+
+:root {
+  --ff-fg: #111827;
+  --ff-fg-muted: #6b7280;
+  --ff-bg: #ffffff;
+  --ff-bg-elevated: #fafafa;
+  --ff-border: #e5e7eb;
+  --ff-accent: #2563eb;
+  --ff-aircraft: #2563eb;
+  --ff-compass-arrow: #2563eb;
+  --ff-compass-heading: #6b7280;
+}
+
+.dark {
+  --ff-fg: #f4f4f5;
+  --ff-fg-muted: #a1a1aa;
+  --ff-bg: #09090b;
+  --ff-bg-elevated: #18181b;
+  --ff-border: #27272a;
+  --ff-accent: #60a5fa;
+  --ff-aircraft: #60a5fa;
+  --ff-compass-arrow: #60a5fa;
+  --ff-compass-heading: #a1a1aa;
+}
+
+html, body, #root { height: 100%; margin: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--ff-bg);
+  color: var(--ff-fg);
+}
+
+/* Multi-tier numeric helpers used by fmtLatHemi / fmtLonHemi */
+.major { font-variant-numeric: tabular-nums; }
+.minor {
+  font-size: 0.75em;
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Aircraft marker color */
+.ff-aircraft { color: var(--ff-aircraft); }
+
+/* Leaflet tooltip and attribution overrides for theme support */
+.leaflet-tooltip {
+  background: var(--ff-bg-elevated);
+  color: var(--ff-fg);
+  border: 1px solid var(--ff-border);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.leaflet-tooltip-top::before { border-top-color: var(--ff-border); }
+.leaflet-tooltip-bottom::before { border-bottom-color: var(--ff-border); }
+.leaflet-tooltip-left::before { border-left-color: var(--ff-border); }
+.leaflet-tooltip-right::before { border-right-color: var(--ff-border); }
+.leaflet-control-attribution {
+  background: var(--ff-bg-elevated) !important;
+  color: var(--ff-fg-muted) !important;
+}
+.leaflet-control-attribution a { color: var(--ff-accent) !important; }
+
+/* HeroUI Modal — bump above Leaflet panes/controls (HeroUI ships z-50, Leaflet uses up to 1100) */
+.modal__backdrop {
+  z-index: 9999 !important;
+}

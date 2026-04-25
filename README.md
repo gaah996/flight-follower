@@ -16,7 +16,7 @@ Built for personal use while flying the FlyByWire A32NX, but works with any airc
 
 ## Stack
 
-TypeScript end-to-end. Server: Node 20, Fastify, ws, [`node-simconnect`](https://www.npmjs.com/package/node-simconnect), Zod. Web: Vite, React 18, Leaflet (via react-leaflet), Zustand. Vitest for unit tests. Single-port HTTP + WebSocket; npm workspaces for the three packages (`shared`, `server`, `web`).
+TypeScript end-to-end. Server: Node 20, Fastify, ws, [`node-simconnect`](https://www.npmjs.com/package/node-simconnect), Zod. Web: Vite, React 19, Leaflet (via react-leaflet), Zustand. Vitest for unit tests. Single-port HTTP + WebSocket; npm workspaces for the three packages (`shared`, `server`, `web`). v1.2 introduces Tailwind v4, HeroUI for theming and primitives, and a dark-by-default theme that toggles in the header.
 
 ## Quick start
 

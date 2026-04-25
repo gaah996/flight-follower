@@ -13,7 +13,7 @@ export function RouteCard() {
   if (!plan) {
     return (
       <Card title="Route">
-        <div style={{ color: '#6b7280' }}>Import a plan to see route info.</div>
+        <div style={{ color: 'var(--ff-fg-muted)' }}>Import a plan to see route info.</div>
       </Card>
     );
   }

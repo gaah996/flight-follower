@@ -34,6 +34,11 @@ export type FlightPlan = {
   alternate?: Airport;
   scheduledOut?: number;
   scheduledIn?: number;
+  flightNumber?: string;
+  aircraftType?: string;
+  cruiseAltitudeFt?: number;
+  totalDistanceNm?: number;
+  routeString?: string;
 };
 
 export type FlightProgress = {
