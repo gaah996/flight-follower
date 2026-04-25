@@ -21,7 +21,7 @@ export function PlannedRoute() {
           radius={4}
           pathOptions={{ color: '#a855f7', fillColor: '#fff', fillOpacity: 1 }}
         >
-          <Tooltip permanent direction="top" offset={[0, -6]}>{w.ident}</Tooltip>
+          <Tooltip direction="top" offset={[0, -6]}>{w.ident}</Tooltip>
         </CircleMarker>
       ))}
       <CircleMarker center={[plan.origin.lat, plan.origin.lon]} radius={6} pathOptions={{ color: '#059669', fillColor: '#059669', fillOpacity: 1 }}>
