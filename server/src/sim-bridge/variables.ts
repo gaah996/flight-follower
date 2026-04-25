@@ -33,9 +33,13 @@ export function buildTelemetry(values: number[], timestamp: number): RawTelemetr
     zuluYear, zuluMonth, zuluDay, zuluTime,
   ] = values as number[];
 
+  // MSFS reports year=0 before a flight is loaded. We treat anything before
+  // 1900 (and any non-finite value) as "no sim time" so the FE falls back to
+  // wall-clock. This project targets present-day airline scenarios; adjust if
+  // historical missions are ever added.
   const simTimeUtc =
-    zuluYear != null && zuluYear >= 1900
-      ? Date.UTC(zuluYear, (zuluMonth ?? 1) - 1, zuluDay ?? 1) + (zuluTime ?? 0) * 1000
+    Number.isFinite(zuluYear) && (zuluYear as number) >= 1900
+      ? Date.UTC(zuluYear as number, (zuluMonth ?? 1) - 1, zuluDay ?? 1) + (zuluTime ?? 0) * 1000
       : undefined;
 
   return {

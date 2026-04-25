@@ -24,4 +24,10 @@ describe('buildTelemetry', () => {
     expect(t.heading.magnetic).toBe(90);
     expect(t.timestamp).toBe(1000);
   });
+
+  it('handles end-of-year boundary (December 31, 23:59:59 UTC)', () => {
+    const zuluTimeSec = 23 * 3600 + 59 * 60 + 59;
+    const t = buildTelemetry([...baseValues, 2026, 12, 31, zuluTimeSec], 1000);
+    expect(t.simTimeUtc).toBe(Date.UTC(2026, 11, 31, 23, 59, 59));
+  });
 });
