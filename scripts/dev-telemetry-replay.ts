@@ -9,9 +9,21 @@ async function main() {
   const repoRoot = resolve(here, '..');
   const fixturePath = process.argv[2] ?? join(here, 'fixtures', 'replay-short.jsonl');
   const tickMs = Number(process.env.REPLAY_TICK_MS ?? 500);
+  const startMs = Number(process.env.REPLAY_START_MS ?? 0);
 
   const lines = readFileSync(fixturePath, 'utf8').split('\n').filter(Boolean);
-  const events: RawTelemetry[] = lines.map((l) => JSON.parse(l) as RawTelemetry);
+  const allEvents: RawTelemetry[] = lines.map((l) => JSON.parse(l) as RawTelemetry);
+  const firstTs = allEvents[0]?.timestamp ?? 0;
+  const skipIdx = startMs > 0
+    ? allEvents.findIndex((e) => e.timestamp - firstTs >= startMs)
+    : 0;
+  const events = skipIdx > 0 ? allEvents.slice(skipIdx) : allEvents;
+  const skipped = allEvents.length - events.length;
+
+  if (events.length === 0) {
+    console.error(`replay: REPLAY_START_MS=${startMs} skipped past the end of the fixture (${allEvents.length} events).`);
+    process.exit(1);
+  }
 
   const running = await start({
     configPath: join(repoRoot, 'server', '.data', 'settings.json'),
@@ -38,7 +50,7 @@ async function main() {
   };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
-  console.log(`replay running at tick=${tickMs}ms, events=${events.length}`);
+  console.log(`replay running at tick=${tickMs}ms, events=${events.length}${skipped ? `, skipped=${skipped}` : ''}`);
 }
 
 main().catch((err) => {
