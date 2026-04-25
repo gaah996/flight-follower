@@ -9,6 +9,7 @@ export function MapController() {
   const mode = useViewStore((s) => s.mode);
   const setMode = useViewStore((s) => s.setMode);
   const setLastView = useViewStore((s) => s.setLastView);
+  const fitOverviewRequest = useViewStore((s) => s.fitOverviewRequest);
   const telemetry = useFlightStore((s) => s.state.telemetry);
   const plan = useFlightStore((s) => s.state.plan);
   // If sessionStorage has a saved view, we're rehydrating from a reload — skip
@@ -43,6 +44,15 @@ export function MapController() {
     prevMode.current = mode;
   }, [mode]);
 
+  // Resetting via an explicit request token covers the "user is already in
+  // Overview when a fresh plan arrives" case, which mode-transition alone
+  // doesn't catch.
+  useEffect(() => {
+    if (fitOverviewRequest > 0) {
+      hasOverviewFitted.current = false;
+    }
+  }, [fitOverviewRequest]);
+
   // Fit to origin+destination on plan load or explicit overview, but only
   // once per "request to fit" — the guard prevents overriding a persisted or
   // user-positioned view every time the plan re-arrives via WS.
@@ -57,7 +67,7 @@ export function MapController() {
     map.fitBounds(bounds, { padding: [40, 40] });
     programmatic.current = false;
     hasOverviewFitted.current = true;
-  }, [mode, plan, map]);
+  }, [mode, plan, map, fitOverviewRequest]);
 
   // Center on aircraft in follow mode.
   useEffect(() => {

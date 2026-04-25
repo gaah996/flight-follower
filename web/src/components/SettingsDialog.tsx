@@ -29,9 +29,11 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
     try {
       await saveSettings({ simbriefUserId: userId.trim() || null });
       await fetchSimbriefPlan();
-      // Frame the freshly-imported route. WS reconnects don't trigger this
-      // because the WS handler no longer touches view mode.
-      useViewStore.getState().setMode('overview');
+      // Frame the freshly-imported route. setMode is a no-op when already in
+      // Overview, so we also bump fitOverviewRequest to force the refit.
+      const view = useViewStore.getState();
+      view.setMode('overview');
+      view.requestFitOverview();
       setStatus('Plan fetched.');
     } catch (err) {
       setStatus(`Fetch failed: ${(err as Error).message}`);
