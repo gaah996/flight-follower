@@ -7,7 +7,15 @@ import { start } from '../server/src/index.js';
 async function main() {
   const here = fileURLToPath(new URL('.', import.meta.url));
   const repoRoot = resolve(here, '..');
-  const fixturePath = process.argv[2] ?? join(here, 'fixtures', 'replay-short.jsonl');
+  // npm --workspace server cd's into <repo>/server before running the script,
+  // so process.cwd() is the workspace dir, not where the user typed the
+  // command. INIT_CWD is npm's stash of the original CWD; resolving against
+  // it makes user-supplied relative paths behave intuitively.
+  const userCwd = process.env.INIT_CWD ?? process.cwd();
+  const fixtureArg = process.argv[2];
+  const fixturePath = fixtureArg
+    ? resolve(userCwd, fixtureArg)
+    : join(here, 'fixtures', 'replay-short.jsonl');
   const tickMs = Number(process.env.REPLAY_TICK_MS ?? 500);
   const startMs = Number(process.env.REPLAY_START_MS ?? 0);
 
