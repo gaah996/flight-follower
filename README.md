@@ -100,6 +100,20 @@ To replay a saved file later, pass the path as the first arg to the replay scrip
 npm --workspace server exec -- tsx ../scripts/dev-telemetry-replay.ts recordings/<your-flight>.jsonl
 ```
 
+The recording log on startup shows the **resolved absolute path** the file is
+being written to — relative `FF_RECORD_PATH` values are resolved against your
+shell's current directory, not the workspace root. While recording, the
+server prints a heartbeat every 30 s with the number of events appended; if
+the first heartbeat fires with zero events, you'll get a warning suggesting
+MSFS may not be running.
+
+To skip the long stationary preamble of a recording during replay, set
+`REPLAY_START_MS`:
+
+```bash
+REPLAY_START_MS=30000 npm run dev:replay -- recordings/<your-flight>.jsonl
+```
+
 ## Project layout
 
 ```
