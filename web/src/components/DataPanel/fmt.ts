@@ -24,3 +24,11 @@ export function fmtLonHemi(v: number | null | undefined): string {
   const hemi = v >= 0 ? 'E' : 'W';
   return `${Math.abs(v).toFixed(2)}° ${hemi}`;
 }
+
+export function fmtUtcTime(epochMs: number | null | undefined): string {
+  if (epochMs == null) return dash;
+  const d = new Date(epochMs);
+  const hh = d.getUTCHours().toString().padStart(2, '0');
+  const mm = d.getUTCMinutes().toString().padStart(2, '0');
+  return `${hh}:${mm}`;
+}
