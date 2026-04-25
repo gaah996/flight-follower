@@ -17,10 +17,27 @@ export const SIM_VARS = [
   ['AMBIENT WIND DIRECTION', 'degrees'],
   ['AMBIENT WIND VELOCITY', 'knots'],
   ['SIM ON GROUND', 'bool'],
+  ['ZULU YEAR', 'number'],
+  ['ZULU MONTH OF YEAR', 'number'],
+  ['ZULU DAY OF MONTH', 'number'],
+  ['ZULU TIME', 'seconds'],
 ] as const;
 
 export function buildTelemetry(values: number[], timestamp: number): RawTelemetry {
-  const [lat, lon, alt, gs, ias, mach, hdg, vs, windDir, windVel, onGround] = values as number[];
+  const [
+    lat, lon, alt,
+    gs, ias, mach,
+    hdg, vs,
+    windDir, windVel,
+    onGround,
+    zuluYear, zuluMonth, zuluDay, zuluTime,
+  ] = values as number[];
+
+  const simTimeUtc =
+    zuluYear != null && zuluYear >= 1900
+      ? Date.UTC(zuluYear, (zuluMonth ?? 1) - 1, zuluDay ?? 1) + (zuluTime ?? 0) * 1000
+      : undefined;
+
   return {
     timestamp,
     position: { lat: lat ?? 0, lon: lon ?? 0 },
@@ -30,5 +47,6 @@ export function buildTelemetry(values: number[], timestamp: number): RawTelemetr
     verticalSpeed: vs ?? 0,
     wind: { direction: windDir ?? 0, speed: windVel ?? 0 },
     onGround: (onGround ?? 0) > 0.5,
+    simTimeUtc,
   };
 }
