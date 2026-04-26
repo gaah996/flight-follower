@@ -4,7 +4,7 @@ import { PositionCard } from './PositionCard.js';
 import { RouteCard } from './RouteCard.js';
 import { Section } from './Section.js';
 import { SpeedCard } from './SpeedCard.js';
-import { TimeCard } from './TimeCard.js';
+import { ClockCard as TimeCard } from './ClockCard.js';
 import { WindCard } from './WindCard.js';
 
 export function DataPanel() {
