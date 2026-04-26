@@ -21,9 +21,9 @@ type ViewStore = {
 };
 
 const DEFAULT_SECTIONS: Record<string, boolean> = {
-  state: true,
-  time: true,
-  route: true,
+  trip: true,
+  now: true,
+  reference: true,
 };
 
 export const useViewStore = create<ViewStore>()(
