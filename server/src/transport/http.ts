@@ -31,6 +31,11 @@ export async function buildHttpApp(opts: HttpOptions): Promise<FastifyInstance> 
     return parsed.data;
   });
 
+  app.post('/api/reset', async () => {
+    opts.aggregator.reset();
+    return { ok: true };
+  });
+
   app.post('/api/simbrief/fetch', async (_req, reply) => {
     const settings = loadSettings(opts.settingsPath);
     if (!settings.simbriefUserId) {

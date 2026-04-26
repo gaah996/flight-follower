@@ -6,10 +6,11 @@ import {
   InputGroup,
   Label,
   Modal,
+  Separator,
   TextField,
   useOverlayState,
 } from "@heroui/react";
-import { fetchSimbriefPlan, getSettings, saveSettings } from "../api/rest.js";
+import { fetchSimbriefPlan, getSettings, resetSession, saveSettings } from "../api/rest.js";
 import { useViewStore } from "../store/view.js";
 import { Gear } from "@gravity-ui/icons";
 
@@ -68,6 +69,22 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
     }
   }
 
+  async function onReset() {
+    setBusy(true);
+    setStatus(null);
+    try {
+      await resetSession();
+      setStatus({ kind: "success", text: "Session reset." });
+    } catch (err) {
+      setStatus({
+        kind: "danger",
+        text: `Reset failed: ${(err as Error).message}`,
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <Modal state={overlayState}>
       <Modal.Backdrop variant="blur">
@@ -109,6 +126,22 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
                   </Alert.Content>
                 </Alert>
               )}
+              <Separator className="my-2" />
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-sm font-medium">Reset session</div>
+                  <div className="text-xs text-fg-muted">
+                    Clears flight plan and breadcrumb trail.
+                  </div>
+                </div>
+                <Button
+                  variant="danger-soft"
+                  onPress={onReset}
+                  isDisabled={busy}
+                >
+                  Reset
+                </Button>
+              </div>
             </Modal.Body>
             <Modal.Footer>
               <Button variant="tertiary" onPress={overlayState.close}>

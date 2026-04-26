@@ -43,6 +43,26 @@ export class Aggregator extends EventEmitter {
     this.emit('plan', plan);
   }
 
+  // Drop the plan, breadcrumb, and flight-time tracking — used by the UI's
+  // "Reset session" action to start tracking fresh without restarting the
+  // server. Telemetry and connection are preserved so the aircraft marker
+  // stays put. Only emits `state` (not `plan`); the WS layer pushes state
+  // on its 500 ms tick, so the cleared plan reaches clients within one tick.
+  reset(): void {
+    this.passedIndex = -1;
+    this.takeoffAt = null;
+    this.wasOnGround = null;
+    this.lastBreadcrumbAt = 0;
+    this.lastBreadcrumbHeading = null;
+    this.state = {
+      ...this.state,
+      plan: null,
+      breadcrumb: [],
+      progress: this.computeProgress(this.state.telemetry, null),
+    };
+    this.emit('state', this.state);
+  }
+
   ingestTelemetry(t: RawTelemetry): void {
     // MSFS reports ~(0,0) on the menu/loading screen. The 1° box around the
     // origin sits entirely in the Gulf of Guinea — no real flight goes there.
