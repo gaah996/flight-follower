@@ -178,47 +178,58 @@ describe('Aggregator near-(0,0) filter', () => {
   });
 });
 
-describe('Aggregator reset', () => {
-  it('clears plan, breadcrumb, and progress', () => {
-    const a = new Aggregator();
-    a.setPlan(PLAN);
-    a.ingestTelemetry(
-      telem({ timestamp: 0, position: { lat: 1, lon: 1 }, onGround: false, speed: { ground: 200, indicated: 200, mach: 0.3 } }),
-    );
-    expect(a.getState().plan).not.toBeNull();
-    expect(a.getState().breadcrumb).toHaveLength(1);
-
-    a.reset();
-    const s = a.getState();
-    expect(s.plan).toBeNull();
-    expect(s.breadcrumb).toEqual([]);
-    expect(s.progress.nextWaypoint).toBeNull();
-    expect(s.progress.distanceToDestNm).toBeNull();
-  });
-
-  it('preserves telemetry and connected after reset', () => {
+describe('Aggregator resetAircraft', () => {
+  it('clears breadcrumb and flight timer; preserves plan and telemetry', () => {
     const a = new Aggregator();
     a.setConnected(true);
+    a.setPlan(PLAN);
     a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 50, lon: 10 }, onGround: true }));
-    a.reset();
+    a.ingestTelemetry(telem({ timestamp: 10_000, position: { lat: 50, lon: 10.01 }, onGround: false }));
+    expect(a.getState().progress.flightTimeSec).toBe(0);
+    expect(a.getState().breadcrumb.length).toBeGreaterThan(0);
+
+    a.resetAircraft();
     const s = a.getState();
+    expect(s.breadcrumb).toEqual([]);
+    expect(s.plan).not.toBeNull();
+    expect(s.telemetry?.position).toEqual({ lat: 50, lon: 10.01 });
     expect(s.connected).toBe(true);
-    expect(s.telemetry?.position).toEqual({ lat: 50, lon: 10 });
+
+    // Subsequent airborne frame should not auto-restart the timer; only a
+    // fresh on-ground → air edge does.
+    a.ingestTelemetry(telem({ timestamp: 20_000, position: { lat: 50, lon: 10.02 }, onGround: false }));
+    expect(a.getState().progress.flightTimeSec).toBeNull();
   });
 
   it('emits "state" but not "plan"', () => {
-    // Plan event symmetry note: setPlan emits both, reset only emits state.
-    // The WS layer pushes state on its 500 ms tick, so clients still see the
-    // cleared plan within one tick.
     const a = new Aggregator();
     a.setPlan(PLAN);
     let stateCount = 0;
     let planCount = 0;
     a.on('state', () => stateCount++);
     a.on('plan', () => planCount++);
-    a.reset();
+    a.resetAircraft();
     expect(stateCount).toBe(1);
     expect(planCount).toBe(0);
+  });
+});
+
+describe('Aggregator resetPlan', () => {
+  it('clears plan and progress; preserves breadcrumb and telemetry', () => {
+    const a = new Aggregator();
+    a.setPlan(PLAN);
+    a.ingestTelemetry(
+      telem({ timestamp: 0, position: { lat: 1, lon: 1 }, onGround: false, speed: { ground: 200, indicated: 200, mach: 0.3 } }),
+    );
+    expect(a.getState().breadcrumb).toHaveLength(1);
+
+    a.resetPlan();
+    const s = a.getState();
+    expect(s.plan).toBeNull();
+    expect(s.progress.nextWaypoint).toBeNull();
+    expect(s.progress.distanceToDestNm).toBeNull();
+    expect(s.breadcrumb).toHaveLength(1);
+    expect(s.telemetry?.position).toEqual({ lat: 1, lon: 1 });
   });
 
   it('rewinds the passed-waypoint cursor so progress restarts from W1', () => {
@@ -230,10 +241,10 @@ describe('Aggregator reset', () => {
     );
     expect(a.getState().progress.nextWaypoint?.ident).toBe('W2');
 
-    // After reset, ingest a frame far from every waypoint so the next
+    // After resetPlan, ingest a frame far from every waypoint so the next
     // setPlan() — which re-runs computeProgress against current telemetry —
     // doesn't immediately re-advance the cursor based on stale position.
-    a.reset();
+    a.resetPlan();
     a.ingestTelemetry(
       telem({ timestamp: 1000, position: { lat: 5, lon: 0 }, onGround: false, speed: { ground: 200, indicated: 200, mach: 0.3 } }),
     );
@@ -241,16 +252,46 @@ describe('Aggregator reset', () => {
     expect(a.getState().progress.nextWaypoint?.ident).toBe('W1');
   });
 
-  it('clears the takeoff timer so flightTimeSec returns to null', () => {
+  it('emits "state" but not "plan"', () => {
     const a = new Aggregator();
+    a.setPlan(PLAN);
+    let stateCount = 0;
+    let planCount = 0;
+    a.on('state', () => stateCount++);
+    a.on('plan', () => planCount++);
+    a.resetPlan();
+    expect(stateCount).toBe(1);
+    expect(planCount).toBe(0);
+  });
+});
+
+describe('Aggregator resetAll', () => {
+  it('clears plan, breadcrumb, flight timer, and progress', () => {
+    const a = new Aggregator();
+    a.setConnected(true);
+    a.setPlan(PLAN);
     a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 50, lon: 10 }, onGround: true }));
     a.ingestTelemetry(telem({ timestamp: 10_000, position: { lat: 50, lon: 10.01 }, onGround: false }));
-    expect(a.getState().progress.flightTimeSec).toBe(0);
 
-    // Reset clears wasOnGround → null. A subsequent airborne frame should
-    // not auto-restart the timer; only a fresh on-ground → air edge does.
-    a.reset();
-    a.ingestTelemetry(telem({ timestamp: 20_000, position: { lat: 50, lon: 10.02 }, onGround: false }));
-    expect(a.getState().progress.flightTimeSec).toBeNull();
+    a.resetAll();
+    const s = a.getState();
+    expect(s.plan).toBeNull();
+    expect(s.breadcrumb).toEqual([]);
+    expect(s.progress.nextWaypoint).toBeNull();
+    expect(s.progress.flightTimeSec).toBeNull();
+    expect(s.connected).toBe(true);
+    expect(s.telemetry?.position).toEqual({ lat: 50, lon: 10.01 });
+  });
+
+  it('emits a single "state" and no "plan" event', () => {
+    const a = new Aggregator();
+    a.setPlan(PLAN);
+    let stateCount = 0;
+    let planCount = 0;
+    a.on('state', () => stateCount++);
+    a.on('plan', () => planCount++);
+    a.resetAll();
+    expect(stateCount).toBe(1);
+    expect(planCount).toBe(0);
   });
 });

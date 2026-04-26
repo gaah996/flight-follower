@@ -43,22 +43,40 @@ export class Aggregator extends EventEmitter {
     this.emit('plan', plan);
   }
 
-  // Drop the plan, breadcrumb, and flight-time tracking — used by the UI's
-  // "Reset session" action to start tracking fresh without restarting the
-  // server. Telemetry and connection are preserved so the aircraft marker
-  // stays put. Only emits `state` (not `plan`); the WS layer pushes state
-  // on its 500 ms tick, so the cleared plan reaches clients within one tick.
-  reset(): void {
-    this.passedIndex = -1;
-    this.takeoffAt = null;
-    this.wasOnGround = null;
-    this.lastBreadcrumbAt = 0;
-    this.lastBreadcrumbHeading = null;
+  // Three scoped resets for the UI's "Reset" actions in Settings. All
+  // preserve telemetry and connection so the aircraft marker stays put.
+  // Plan-clearing variants only emit `state` (not `plan`); the WS layer
+  // pushes state on its 500 ms tick, so clients see the change within one
+  // tick.
+  resetAircraft(): void {
+    this.applyReset({ aircraft: true, plan: false });
+  }
+
+  resetPlan(): void {
+    this.applyReset({ aircraft: false, plan: true });
+  }
+
+  resetAll(): void {
+    this.applyReset({ aircraft: true, plan: true });
+  }
+
+  private applyReset(opts: { aircraft: boolean; plan: boolean }): void {
+    if (opts.aircraft) {
+      this.takeoffAt = null;
+      this.wasOnGround = null;
+      this.lastBreadcrumbAt = 0;
+      this.lastBreadcrumbHeading = null;
+    }
+    if (opts.plan) {
+      this.passedIndex = -1;
+    }
+    const nextPlan = opts.plan ? null : this.state.plan;
+    const nextBreadcrumb = opts.aircraft ? [] : this.state.breadcrumb;
     this.state = {
       ...this.state,
-      plan: null,
-      breadcrumb: [],
-      progress: this.computeProgress(this.state.telemetry, null),
+      plan: nextPlan,
+      breadcrumb: nextBreadcrumb,
+      progress: this.computeProgress(this.state.telemetry, nextPlan),
     };
     this.emit('state', this.state);
   }

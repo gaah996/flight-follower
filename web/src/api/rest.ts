@@ -6,8 +6,14 @@ export async function getSettings(): Promise<Settings> {
   return (await res.json()) as Settings;
 }
 
-export async function resetSession(): Promise<void> {
-  const res = await fetch('/api/reset', { method: 'POST' });
+export type ResetScope = 'aircraft' | 'plan' | 'all';
+
+export async function resetSession(scope: ResetScope): Promise<void> {
+  const res = await fetch('/api/reset', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ scope }),
+  });
   if (!res.ok) throw new Error(`POST /api/reset ${res.status}`);
 }
 
