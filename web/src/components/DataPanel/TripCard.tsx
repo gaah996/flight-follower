@@ -48,10 +48,10 @@ export function TripCard() {
         {/* Origin → Destination, two columns, with scheduled times under each */}
         <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-start">
           <div className="flex flex-col gap-0.5 min-w-0">
-            <div className="font-mono text-sm font-semibold">{plan.origin.icao}</div>
+            <div className="font-mono text-lg font-semibold leading-tight">{plan.origin.icao}</div>
             <div className="text-xs text-fg-muted">{airportLabel(plan.origin)}</div>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className="font-mono text-sm">{fmtUtcTime(plan.scheduledOut)}</span>
+              <span className="font-mono text-sm tabular-nums">{fmtUtcTime(plan.scheduledOut)}</span>
               {plan.scheduledOut != null && (
                 <Chip size="sm" variant="soft" color="default">
                   <Chip.Label>sched</Chip.Label>
