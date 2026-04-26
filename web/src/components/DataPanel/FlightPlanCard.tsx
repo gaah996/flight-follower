@@ -1,21 +1,22 @@
 import { useState } from 'react';
 import { useFlightStore } from '../../store/flight.js';
 import { Card, Row } from './PositionCard.js';
+import { dash, fmtUtcTime } from './fmt.js';
 
 function fmtFL(ft: number | undefined): string {
-  if (ft == null) return '—';
+  if (ft == null) return dash;
   // Floor to the nearest 1000 ft so Simbrief's metric-converted altitudes
   // (e.g. 38500 for an FL380 plan) render as FL380 rather than FL385/FL390.
   return 'FL' + (Math.floor(ft / 1000) * 10).toString().padStart(3, '0');
 }
 
-export function FlightInfoCard() {
+export function FlightPlanCard() {
   const plan = useFlightStore((s) => s.state.plan);
   const [expanded, setExpanded] = useState(false);
 
   if (!plan) {
     return (
-      <Card title="Flight info">
+      <Card title="Flight plan">
         <div style={{ color: 'var(--ff-fg-muted)' }}>Import a plan to see flight info.</div>
       </Card>
     );
@@ -25,10 +26,10 @@ export function FlightInfoCard() {
     ? plan.aircraftType
       ? `${plan.flightNumber} · ${plan.aircraftType}`
       : plan.flightNumber
-    : plan.aircraftType ?? '—';
+    : plan.aircraftType ?? dash;
 
   return (
-    <Card title="Flight info">
+    <Card title="Flight plan">
       <div
         style={{
           fontSize: 14,
@@ -40,7 +41,9 @@ export function FlightInfoCard() {
         {callsign}
       </div>
       <Row label="Cruise">{fmtFL(plan.cruiseAltitudeFt)}</Row>
-      <Row label="Distance">{plan.totalDistanceNm != null ? `${plan.totalDistanceNm} nm` : '—'}</Row>
+      <Row label="Distance">{plan.totalDistanceNm != null ? `${plan.totalDistanceNm} nm` : dash}</Row>
+      <Row label="UTC dep">{fmtUtcTime(plan.scheduledOut)}</Row>
+      <Row label="UTC arr">{fmtUtcTime(plan.scheduledIn)}</Row>
       {plan.routeString && (
         <div
           onClick={() => setExpanded((v) => !v)}

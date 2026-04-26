@@ -1,5 +1,5 @@
 import { AltitudeCard } from './AltitudeCard.js';
-import { FlightInfoCard } from './FlightInfoCard.js';
+import { FlightPlanCard as FlightInfoCard } from './FlightPlanCard.js';
 import { PositionCard } from './PositionCard.js';
 import { RouteCard } from './RouteCard.js';
 import { Section } from './Section.js';
