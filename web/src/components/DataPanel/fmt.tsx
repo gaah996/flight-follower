@@ -39,6 +39,22 @@ export function fmtUtcTime(epochMs: number | null | undefined): string {
   return `${hh}:${mm}`;
 }
 
+/** Like fmtUtcTime but renders seconds as a smaller, dimmer minor tier
+ *  (matches fmtDurationTier / fmtLatHemi typography). */
+export function fmtUtcTimeTier(epochMs: number | null | undefined): ReactNode {
+  if (epochMs == null) return dash;
+  const d = new Date(epochMs);
+  const hh = d.getUTCHours().toString().padStart(2, '0');
+  const mm = d.getUTCMinutes().toString().padStart(2, '0');
+  const ss = d.getUTCSeconds().toString().padStart(2, '0');
+  return (
+    <span>
+      <span className="major">{hh}:{mm}</span>
+      <span className="minor">:{ss}</span>
+    </span>
+  );
+}
+
 function splitMajorMinor(v: number, majorDigits = 2, totalDigits = 4): { major: string; minor: string } {
   const abs = Math.abs(v);
   const major = abs.toFixed(majorDigits);
