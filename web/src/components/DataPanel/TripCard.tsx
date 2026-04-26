@@ -1,0 +1,78 @@
+import { useEffect, useState } from 'react';
+import type { Airport } from '@ff/shared';
+import { useFlightStore } from '../../store/flight.js';
+import { Card, Row } from './PositionCard.js';
+import { dash, fmtDurationSec, fmtNum, fmtUtcTime } from './fmt.js';
+
+function fmtAirport(a: Airport): string {
+  return a.name ? `${a.icao} · ${a.name}` : a.icao;
+}
+
+export function TripCard() {
+  const plan = useFlightStore((s) => s.state.plan);
+  const progress = useFlightStore((s) => s.state.progress);
+  const telemetry = useFlightStore((s) => s.state.telemetry);
+
+  // Force a re-render every 30s so the wall-clock fallback for ETA still
+  // ticks even when no telemetry is arriving (e.g. on the menu).
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((x) => x + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!plan) {
+    return (
+      <Card title="Trip">
+        <div style={{ color: 'var(--ff-fg-muted)' }}>Import a plan to see trip info.</div>
+      </Card>
+    );
+  }
+
+  const now = telemetry?.simTimeUtc ?? Date.now();
+  const etaMs =
+    progress.eteToDestSec != null ? now + progress.eteToDestSec * 1000 : null;
+
+  const distanceToGo =
+    progress.distanceToDestNm != null ? `${fmtNum(progress.distanceToDestNm, 0)} nm` : dash;
+  const eteToGo = fmtDurationSec(progress.eteToDestSec);
+  const eta = etaMs != null ? `${fmtUtcTime(etaMs)}z` : dash;
+
+  return (
+    <Card title="Trip">
+      <div
+        style={{
+          fontSize: 14,
+          fontFamily: 'ui-monospace, monospace',
+          color: 'var(--ff-fg)',
+          lineHeight: 1.4,
+        }}
+      >
+        <div>{fmtAirport(plan.origin)}</div>
+        <div style={{ color: 'var(--ff-fg-muted)' }}>↓</div>
+        <div>{fmtAirport(plan.destination)}</div>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <Row label="To go">{distanceToGo}</Row>
+        <Row label="ETE">{eteToGo}</Row>
+        <Row label="ETA">{eta}</Row>
+      </div>
+      {progress.nextWaypoint && (
+        <div
+          style={{
+            marginTop: 8,
+            paddingTop: 6,
+            borderTop: '1px solid var(--ff-border)',
+            fontSize: 12,
+            color: 'var(--ff-fg-muted)',
+            fontFamily: 'ui-monospace, monospace',
+          }}
+        >
+          Next: {progress.nextWaypoint.ident}
+          {progress.distanceToNextNm != null ? ` · ${fmtNum(progress.distanceToNextNm, 1)} nm` : ''}
+          {progress.eteToNextSec != null ? ` · ${fmtDurationSec(progress.eteToNextSec)}` : ''}
+        </div>
+      )}
+    </Card>
+  );
+}
