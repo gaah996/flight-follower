@@ -29,15 +29,18 @@ function OnGroundIndicator({ onGround }: { onGround: boolean | undefined }) {
             }}
             aria-hidden
           >
-            <circle
-              cx="8"
-              cy="8"
-              r="6"
-              fill="none"
+            {/* Y-shaped strut: nose wheel down to centre, then splays to mains */}
+            <path
+              d="M 8 4 L 8 8 M 3.5 11.5 L 8 8 L 12.5 11.5"
               stroke="currentColor"
-              strokeWidth="1.5"
+              strokeWidth="1.25"
+              strokeLinecap="round"
+              fill="none"
             />
-            <circle cx="8" cy="8" r="2" fill="currentColor" />
+            {/* Three wheels: nose (top), main left, main right */}
+            <circle cx="8" cy="3" r="1.25" fill="currentColor" />
+            <circle cx="3" cy="12.5" r="1.25" fill="currentColor" />
+            <circle cx="13" cy="12.5" r="1.25" fill="currentColor" />
           </svg>
         </span>
       </TooltipTrigger>
