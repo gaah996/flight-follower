@@ -32,11 +32,11 @@ function OnGroundIndicator({ onGround }: { onGround: boolean | undefined }) {
             {/* Three wheels (filled hub + outline tire), arranged as nose +
                 two mains in a triangle. Struts dropped — the configuration
                 alone reads as a landing gear set. */}
-            <circle cx="6.5" cy="3" r="1.25" fill="currentColor" />
+            <circle cx="6.5" cy="3" r="1" fill="currentColor" />
             <circle cx="6.5" cy="3" r="2.5" stroke="currentColor" fill="none" />
-            <circle cx="3" cy="10" r="1.25" fill="currentColor" />
+            <circle cx="3" cy="10" r="1" fill="currentColor" />
             <circle cx="3" cy="10" r="2.5" stroke="currentColor" fill="none" />
-            <circle cx="10" cy="10" r="1.25" fill="currentColor" />
+            <circle cx="10" cy="10" r="1" fill="currentColor" />
             <circle cx="10" cy="10" r="2.5" stroke="currentColor" fill="none" />
           </svg>
         </span>
@@ -69,7 +69,10 @@ export function MotionCard() {
           <span style={{ color: "var(--ff-fg-muted)" }}>GS</span>
           <span
             className="inline-flex items-center gap-1.5"
-            style={{ fontVariantNumeric: "tabular-nums", color: "var(--ff-fg)" }}
+            style={{
+              fontVariantNumeric: "tabular-nums",
+              color: "var(--ff-fg)",
+            }}
           >
             {t ? `${fmtNum(t.speed.ground, 0)} kt` : dash}
             <ChevronDown
