@@ -1,9 +1,50 @@
 import { useState } from "react";
-import { Card, Separator, Surface } from "@heroui/react";
+import {
+  Card,
+  Separator,
+  Surface,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@heroui/react";
 import { ChevronDown } from "@gravity-ui/icons";
 import { useFlightStore } from "../../store/flight.js";
 import { dash, fmtNum } from "./fmt.js";
 import { Row } from "./Row.js";
+
+function OnGroundIndicator({ onGround }: { onGround: boolean | undefined }) {
+  const isOnGround = onGround === true;
+  const label = isOnGround ? "On ground" : "Airborne";
+  return (
+    <Tooltip>
+      <TooltipTrigger>
+        <span className="inline-flex" aria-label={label}>
+          <svg
+            viewBox="0 0 16 16"
+            width={14}
+            height={14}
+            style={{
+              color: isOnGround ? "#16a34a" : "var(--ff-fg-muted)",
+              opacity: isOnGround ? 1 : 0.5,
+            }}
+            aria-hidden
+          >
+            <circle
+              cx="8"
+              cy="8"
+              r="6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+            <circle cx="8" cy="8" r="2" fill="currentColor" />
+          </svg>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 export function MotionCard() {
   const t = useFlightStore((s) => s.state.telemetry);
@@ -11,8 +52,9 @@ export function MotionCard() {
 
   return (
     <Card variant="default">
-      <Card.Header>
+      <Card.Header className="flex items-center justify-between">
         <Card.Title>Motion</Card.Title>
+        <OnGroundIndicator onGround={t?.onGround} />
       </Card.Header>
       <Card.Content>
         {/* GS row doubles as the disclosure trigger for IAS / Mach below.
