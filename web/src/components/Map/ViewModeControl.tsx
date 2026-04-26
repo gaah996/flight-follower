@@ -21,10 +21,16 @@ export function ViewModeControl() {
           const selected = Array.from(keys as Set<string>)[0];
           if (selected) setMode(selected as ViewMode);
         }}
-        className="bg-default rounded-full"
+        className="rounded-full"
+        style={{
+          background: "var(--ff-bg-translucent)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          border: "1px solid var(--ff-border)",
+        }}
       >
         {MODES.map((m) => (
-          <ToggleButton key={m} id={m} className="capitalize">
+          <ToggleButton key={m} id={m} className="capitalize" variant="ghost">
             {m}
           </ToggleButton>
         ))}
