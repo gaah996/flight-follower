@@ -85,3 +85,10 @@ body {
 .modal__backdrop {
   z-index: 9999 !important;
 }
+
+/* Match the side panel's frosted-glass treatment for the modal backdrop. */
+.modal__backdrop--blur {
+  background: var(--ff-bg-translucent) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
