@@ -15,12 +15,44 @@ export function fmtDurationSec(sec: number | null | undefined): string {
   return `${hh}:${mm}:${ss}`;
 }
 
+/** Like fmtDurationSec but renders seconds as a smaller, dimmer minor tier
+ *  (matches fmtLatHemi / fmtLonHemi typography). */
+export function fmtDurationTier(sec: number | null | undefined): ReactNode {
+  if (sec == null) return dash;
+  const s = Math.floor(sec);
+  const hh = Math.floor(s / 3600).toString().padStart(2, '0');
+  const mm = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+  const ss = (s % 60).toString().padStart(2, '0');
+  return (
+    <span>
+      <span className="major">{hh}:{mm}</span>
+      <span className="minor">:{ss}</span>
+    </span>
+  );
+}
+
 export function fmtUtcTime(epochMs: number | null | undefined): string {
   if (epochMs == null) return dash;
   const d = new Date(epochMs);
   const hh = d.getUTCHours().toString().padStart(2, '0');
   const mm = d.getUTCMinutes().toString().padStart(2, '0');
   return `${hh}:${mm}`;
+}
+
+/** Like fmtUtcTime but renders seconds as a smaller, dimmer minor tier
+ *  (matches fmtDurationTier / fmtLatHemi typography). */
+export function fmtUtcTimeTier(epochMs: number | null | undefined): ReactNode {
+  if (epochMs == null) return dash;
+  const d = new Date(epochMs);
+  const hh = d.getUTCHours().toString().padStart(2, '0');
+  const mm = d.getUTCMinutes().toString().padStart(2, '0');
+  const ss = d.getUTCSeconds().toString().padStart(2, '0');
+  return (
+    <span>
+      <span className="major">{hh}:{mm}</span>
+      <span className="minor">:{ss}</span>
+    </span>
+  );
 }
 
 function splitMajorMinor(v: number, majorDigits = 2, totalDigits = 4): { major: string; minor: string } {

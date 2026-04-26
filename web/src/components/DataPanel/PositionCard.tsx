@@ -1,72 +1,47 @@
+import { Card, Separator } from '@heroui/react';
 import { useFlightStore } from '../../store/flight.js';
-import { fmtLatHemi, fmtLonHemi } from './fmt.js';
+import { dash, fmtLatHemi, fmtLonHemi, fmtNum } from './fmt.js';
+import { Row } from './Row.js';
+
+// Same north-pointing plane silhouette used by AircraftMarker. Drawn nose-up
+// at 0°, so rotation by raw magnetic heading works without offset.
+const PLANE_PATH =
+  'M21 16v-2l-8-5V3.5C13 2.7 12.3 2 11.5 2S10 2.7 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z';
 
 export function PositionCard() {
   const t = useFlightStore((s) => s.state.telemetry);
   const lat = fmtLatHemi(t?.position.lat);
   const lon = fmtLonHemi(t?.position.lon);
   return (
-    <Card title="Position">
-      <Row label="Lat">{lat}</Row>
-      <Row label="Lon">{lon}</Row>
+    <Card variant="default">
+      <Card.Header>
+        <Card.Title>Position</Card.Title>
+      </Card.Header>
+      <Card.Content>
+        <Row label="Lat">{lat}</Row>
+        <Row label="Lon">{lon}</Row>
+        <Separator className="my-3" />
+        <Row label="HDG" tooltip="Magnetic heading">
+          <span className="inline-flex items-center gap-1.5">
+            {t ? `${fmtNum(t.heading.magnetic, 0)}°` : dash}
+            {t && (
+              <svg
+                viewBox="0 0 24 24"
+                width={12}
+                height={12}
+                style={{
+                  transform: `rotate(${t.heading.magnetic}deg)`,
+                  transformOrigin: 'center',
+                  color: 'var(--ff-fg-muted)',
+                }}
+                aria-hidden
+              >
+                <path fill="currentColor" d={PLANE_PATH} />
+              </svg>
+            )}
+          </span>
+        </Row>
+      </Card.Content>
     </Card>
-  );
-}
-
-export function Card({
-  title,
-  children,
-  sideSlot,
-}: {
-  title: string;
-  children: React.ReactNode;
-  sideSlot?: React.ReactNode;
-}) {
-  const content = (
-    <>
-      <h3
-        style={{
-          margin: 0,
-          fontSize: 11,
-          color: 'var(--ff-fg-muted)',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: 0.6,
-        }}
-      >
-        {title}
-      </h3>
-      <div style={{ marginTop: 4, fontSize: 14 }}>{children}</div>
-    </>
-  );
-  return (
-    <section
-      style={{
-        padding: 10,
-        border: '1px solid var(--ff-border)',
-        background: 'var(--ff-bg-elevated)',
-        borderRadius: 6,
-        marginBottom: 8,
-        color: 'var(--ff-fg)',
-      }}
-    >
-      {sideSlot ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>{content}</div>
-          {sideSlot}
-        </div>
-      ) : (
-        content
-      )}
-    </section>
-  );
-}
-
-export function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <span style={{ color: 'var(--ff-fg-muted)' }}>{label}</span>
-      <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--ff-fg)' }}>{children}</span>
-    </div>
   );
 }

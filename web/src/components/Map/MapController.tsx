@@ -3,6 +3,7 @@ import { LatLngBounds, latLng } from 'leaflet';
 import { useMap, useMapEvents } from 'react-leaflet';
 import { useFlightStore } from '../../store/flight.js';
 import { useViewStore } from '../../store/view.js';
+import { PANEL_WIDTH, panelAwareCenter } from './panelOffset.js';
 
 export function MapController() {
   const map = useMap();
@@ -10,6 +11,7 @@ export function MapController() {
   const setMode = useViewStore((s) => s.setMode);
   const setLastView = useViewStore((s) => s.setLastView);
   const fitOverviewRequest = useViewStore((s) => s.fitOverviewRequest);
+  const panelVisible = useViewStore((s) => s.panelVisible);
   const telemetry = useFlightStore((s) => s.state.telemetry);
   const plan = useFlightStore((s) => s.state.plan);
   // If sessionStorage has a saved view, we're rehydrating from a reload — skip
@@ -53,6 +55,17 @@ export function MapController() {
     }
   }, [fitOverviewRequest]);
 
+  // Toggling the side panel changes the visible region; refit overview so
+  // the route stays inside it. Tracked via a ref-comparison so the initial
+  // mount (panel state hasn't *changed* yet) doesn't override a saved view.
+  const prevPanelVisible = useRef(panelVisible);
+  useEffect(() => {
+    if (mode === 'overview' && prevPanelVisible.current !== panelVisible) {
+      hasOverviewFitted.current = false;
+    }
+    prevPanelVisible.current = panelVisible;
+  }, [panelVisible, mode]);
+
   // Fit to origin+destination on plan load or explicit overview, but only
   // once per "request to fit" — the guard prevents overriding a persisted or
   // user-positioned view every time the plan re-arrives via WS.
@@ -64,18 +77,25 @@ export function MapController() {
       latLng(plan.destination.lat, plan.destination.lon),
     );
     programmatic.current = true;
-    map.fitBounds(bounds, { padding: [40, 40] });
+    map.fitBounds(bounds, {
+      paddingTopLeft: [40, 40],
+      paddingBottomRight: [40 + (panelVisible ? PANEL_WIDTH : 0), 40],
+    });
     programmatic.current = false;
     hasOverviewFitted.current = true;
-  }, [mode, plan, map, fitOverviewRequest]);
+  }, [mode, plan, map, fitOverviewRequest, panelVisible]);
 
-  // Center on aircraft in follow mode.
+  // Center on aircraft in follow mode. The shared panelAwareCenter helper
+  // shifts the map's geometric center PANEL_WIDTH/2 east of the aircraft
+  // when the panel is open, so the aircraft lands at the centre of the
+  // visible region instead of behind the panel.
   useEffect(() => {
     if (mode !== 'follow' || !telemetry) return;
+    const center = panelAwareCenter(map, telemetry.position, panelVisible);
     programmatic.current = true;
-    map.panTo([telemetry.position.lat, telemetry.position.lon], { animate: true });
+    map.panTo(center, { animate: true });
     programmatic.current = false;
-  }, [mode, telemetry, map]);
+  }, [mode, telemetry, map, panelVisible]);
 
   return null;
 }

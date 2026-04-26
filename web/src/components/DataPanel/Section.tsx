@@ -48,7 +48,10 @@ export function Section({ title, sectionKey, children }: Props) {
         {title}
       </button>
       {open && (
-        <div id={`section-${sectionKey}`} style={{ marginTop: 4 }}>
+        <div
+          id={`section-${sectionKey}`}
+          style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 8 }}
+        >
           {children}
         </div>
       )}

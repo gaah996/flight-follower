@@ -14,21 +14,23 @@ export function App() {
     <div style={{ display: 'grid', gridTemplateRows: '40px 1fr', height: '100vh' }}>
       <Header onOpenSettings={() => setShowSettings(true)} />
       <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: panelVisible ? '1fr 360px' : '1fr',
-          minHeight: 0,
-        }}
+        className={panelVisible ? 'ff-panel-visible' : undefined}
+        style={{ position: 'relative', minHeight: 0 }}
       >
-        <div style={{ minHeight: 0 }}>
-          <Map />
-        </div>
+        <Map />
         {panelVisible && (
           <aside
             style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: 360,
               borderLeft: '1px solid var(--ff-border)',
-              minHeight: 0,
-              background: 'var(--ff-bg)',
+              background: 'var(--ff-bg-translucent)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              zIndex: 500,
             }}
           >
             <DataPanel />

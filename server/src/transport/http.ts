@@ -3,7 +3,7 @@ import fastifyStatic from '@fastify/static';
 import { loadSettings, saveSettings } from '../config/settings.js';
 import { fetchLatestOfp, SimbriefError } from '../simbrief/client.js';
 import type { Aggregator } from '../state/aggregator.js';
-import { SettingsBodySchema } from './schemas.js';
+import { ResetBodySchema, SettingsBodySchema } from './schemas.js';
 
 export type HttpOptions = {
   aggregator: Aggregator;
@@ -29,6 +29,26 @@ export async function buildHttpApp(opts: HttpOptions): Promise<FastifyInstance> 
     }
     saveSettings(opts.settingsPath, parsed.data);
     return parsed.data;
+  });
+
+  app.post('/api/reset', async (req, reply) => {
+    const parsed = ResetBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      reply.code(400);
+      return { error: 'INVALID_BODY', detail: parsed.error.flatten() };
+    }
+    switch (parsed.data.scope) {
+      case 'aircraft':
+        opts.aggregator.resetAircraft();
+        break;
+      case 'plan':
+        opts.aggregator.resetPlan();
+        break;
+      case 'all':
+        opts.aggregator.resetAll();
+        break;
+    }
+    return { ok: true };
   });
 
   app.post('/api/simbrief/fetch', async (_req, reply) => {

@@ -6,12 +6,19 @@ import {
   InputGroup,
   Label,
   Modal,
+  Separator,
   TextField,
   useOverlayState,
 } from "@heroui/react";
-import { fetchSimbriefPlan, getSettings, saveSettings } from "../api/rest.js";
+import {
+  fetchSimbriefPlan,
+  getSettings,
+  resetSession,
+  saveSettings,
+  type ResetScope,
+} from "../api/rest.js";
 import { useViewStore } from "../store/view.js";
-import { Gear } from "@gravity-ui/icons";
+import { Gear, Xmark } from "@gravity-ui/icons";
 
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const [userId, setUserId] = useState("");
@@ -68,11 +75,34 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
     }
   }
 
+  const RESET_LABELS: Record<ResetScope, string> = {
+    aircraft: "Aircraft data reset.",
+    plan: "Flight plan reset.",
+    all: "Session reset.",
+  };
+
+  async function onReset(scope: ResetScope) {
+    setBusy(true);
+    setStatus(null);
+    try {
+      await resetSession(scope);
+      setStatus({ kind: "success", text: RESET_LABELS[scope] });
+    } catch (err) {
+      setStatus({
+        kind: "danger",
+        text: `Reset failed: ${(err as Error).message}`,
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <Modal state={overlayState}>
       <Modal.Backdrop variant="blur">
         <Modal.Container size="md">
           <Modal.Dialog>
+            <Modal.CloseTrigger aria-label="Close" />
             <Modal.Header>
               <Modal.Icon className="bg-default text-foreground">
                 <Gear width={24} height={24} />
@@ -93,11 +123,11 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
                   />
                   <Button
                     variant="ghost"
-                    onPress={onFetch}
-                    isDisabled={busy || !userId.trim()}
+                    onPress={onSave}
+                    isDisabled={busy}
                     className="text-accent-soft-foreground"
                   >
-                    Fetch latest plan
+                    Save
                   </Button>
                 </div>
               </TextField>
@@ -109,15 +139,73 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
                   </Alert.Content>
                 </Alert>
               )}
+              <Separator className="my-2" />
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-sm font-medium">Fetch latest plan</div>
+                    <div className="text-xs text-fg-muted">
+                      Pull the latest OFP from Simbrief.
+                    </div>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    onPress={onFetch}
+                    isDisabled={busy || !userId.trim()}
+                  >
+                    Fetch
+                  </Button>
+                </div>
+              </div>
+              <Separator className="my-2" />
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-sm font-medium">Aircraft data</div>
+                    <div className="text-xs text-fg-muted">
+                      Clears the breadcrumb trail and flight time.
+                    </div>
+                  </div>
+                  <Button
+                    variant="danger-soft"
+                    onPress={() => onReset("aircraft")}
+                    isDisabled={busy}
+                  >
+                    Reset
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-sm font-medium">Flight plan</div>
+                    <div className="text-xs text-fg-muted">
+                      Clears the loaded flight plan.
+                    </div>
+                  </div>
+                  <Button
+                    variant="danger-soft"
+                    onPress={() => onReset("plan")}
+                    isDisabled={busy}
+                  >
+                    Reset
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-sm font-medium">Everything</div>
+                    <div className="text-xs text-fg-muted">
+                      Clears aircraft data and flight plan.
+                    </div>
+                  </div>
+                  <Button
+                    variant="danger"
+                    onPress={() => onReset("all")}
+                    isDisabled={busy}
+                  >
+                    Reset all
+                  </Button>
+                </div>
+              </div>
             </Modal.Body>
-            <Modal.Footer>
-              <Button variant="tertiary" onPress={overlayState.close}>
-                Close
-              </Button>
-              <Button variant="primary" onPress={onSave} isDisabled={busy}>
-                Save
-              </Button>
-            </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>

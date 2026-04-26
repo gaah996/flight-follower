@@ -18,6 +18,9 @@
   --ff-fg-muted: #6b7280;
   --ff-bg: #ffffff;
   --ff-bg-elevated: #fafafa;
+  --ff-bg-translucent: rgba(255, 255, 255, 0.5);
+  --ff-bg-modal-translucent: rgba(255, 255, 255, 0.3);
+  --ff-bg-tooltip-translucent: rgba(255, 255, 255, 0.6);
   --ff-border: #e5e7eb;
   --ff-accent: #2563eb;
   --ff-aircraft: #2563eb;
@@ -30,6 +33,9 @@
   --ff-fg-muted: #a1a1aa;
   --ff-bg: #09090b;
   --ff-bg-elevated: #18181b;
+  --ff-bg-translucent: rgba(9, 9, 11, 0.5);
+  --ff-bg-modal-translucent: rgba(9, 9, 11, 0.3);
+  --ff-bg-tooltip-translucent: rgba(9, 9, 11, 0.6);
   --ff-border: #27272a;
   --ff-accent: #60a5fa;
   --ff-aircraft: #60a5fa;
@@ -52,27 +58,98 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* DataPanel Row primitive: 0.25rem of space between consecutive rows. */
+.ff-row + .ff-row {
+  margin-top: 0.25rem;
+}
+
 /* Aircraft marker color */
 .ff-aircraft { color: var(--ff-aircraft); }
 
-/* Leaflet tooltip and attribution overrides for theme support */
+/* Leaflet tooltip and attribution overrides for theme support.
+   Tooltips use a frosted-glass treatment (translucent bg + blur) so they
+   read as the same material as the side panel and modal surfaces. Default
+   Leaflet arrows are hidden — the CSS-border triangle wouldn't carry the
+   rounded corners cleanly. opacity: 1 forces solidity over react-leaflet's
+   inline default of 0.9 (which would otherwise multiply our background's
+   alpha). */
 .leaflet-tooltip {
-  background: var(--ff-bg-elevated);
+  background: var(--ff-bg-tooltip-translucent);
   color: var(--ff-fg);
   border: 1px solid var(--ff-border);
+  border-radius: 12px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  opacity: 1 !important;
 }
-.leaflet-tooltip-top::before { border-top-color: var(--ff-border); }
-.leaflet-tooltip-bottom::before { border-bottom-color: var(--ff-border); }
-.leaflet-tooltip-left::before { border-left-color: var(--ff-border); }
-.leaflet-tooltip-right::before { border-right-color: var(--ff-border); }
+.leaflet-tooltip-top::before,
+.leaflet-tooltip-bottom::before,
+.leaflet-tooltip-left::before,
+.leaflet-tooltip-right::before {
+  display: none;
+}
 .leaflet-control-attribution {
   background: var(--ff-bg-elevated) !important;
   color: var(--ff-fg-muted) !important;
 }
 .leaflet-control-attribution a { color: var(--ff-accent) !important; }
 
+/* When the side panel is visible it overlays the right side of the map.
+   Push Leaflet's bottom-right control stack (attribution) past the panel
+   so it stays visible. The panel is 360px wide; we add 12px of gap. */
+.ff-panel-visible .leaflet-bottom.leaflet-right {
+  right: 372px;
+}
+
+/* Style Leaflet's zoom controls to match HeroUI's ghost-button family
+   (ViewModeControl, CenterButton). The wrapper carries the frost-glass
+   surface; individual buttons are transparent → --color-default on hover,
+   same as a HeroUI ghost button. */
+.leaflet-control-zoom {
+  background: var(--ff-bg-translucent) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--ff-border) !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+.leaflet-control-zoom a {
+  background: transparent !important;
+  color: var(--ff-fg) !important;
+  border: none !important;
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 30px !important;
+  font-size: 18px !important;
+  font-weight: 500 !important;
+  transition: background 120ms ease;
+}
+.leaflet-control-zoom a:hover {
+  background: var(--color-default) !important;
+}
+.leaflet-control-zoom-in {
+  border-radius: 14px 14px 0 0 !important;
+}
+.leaflet-control-zoom-out {
+  border-radius: 0 0 14px 14px !important;
+}
+.leaflet-control-zoom a.leaflet-disabled {
+  background: transparent !important;
+  color: var(--ff-fg-muted) !important;
+  cursor: not-allowed;
+}
+
 /* HeroUI Modal — bump above Leaflet panes/controls (HeroUI ships z-50, Leaflet uses up to 1100) */
 .modal__backdrop {
   z-index: 9999 !important;
+}
+
+/* Frosted-glass treatment for the modal backdrop, slightly more transparent
+   than the side panel (alpha 0.3 vs 0.5) so the modal feels lighter. */
+.modal__backdrop--blur {
+  background: var(--ff-bg-modal-translucent) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
 }

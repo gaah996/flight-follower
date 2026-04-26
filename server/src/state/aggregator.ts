@@ -43,6 +43,44 @@ export class Aggregator extends EventEmitter {
     this.emit('plan', plan);
   }
 
+  // Three scoped resets for the UI's "Reset" actions in Settings. All
+  // preserve telemetry and connection so the aircraft marker stays put.
+  // Plan-clearing variants only emit `state` (not `plan`); the WS layer
+  // pushes state on its 500 ms tick, so clients see the change within one
+  // tick.
+  resetAircraft(): void {
+    this.applyReset({ aircraft: true, plan: false });
+  }
+
+  resetPlan(): void {
+    this.applyReset({ aircraft: false, plan: true });
+  }
+
+  resetAll(): void {
+    this.applyReset({ aircraft: true, plan: true });
+  }
+
+  private applyReset(opts: { aircraft: boolean; plan: boolean }): void {
+    if (opts.aircraft) {
+      this.takeoffAt = null;
+      this.wasOnGround = null;
+      this.lastBreadcrumbAt = 0;
+      this.lastBreadcrumbHeading = null;
+    }
+    if (opts.plan) {
+      this.passedIndex = -1;
+    }
+    const nextPlan = opts.plan ? null : this.state.plan;
+    const nextBreadcrumb = opts.aircraft ? [] : this.state.breadcrumb;
+    this.state = {
+      ...this.state,
+      plan: nextPlan,
+      breadcrumb: nextBreadcrumb,
+      progress: this.computeProgress(this.state.telemetry, nextPlan),
+    };
+    this.emit('state', this.state);
+  }
+
   ingestTelemetry(t: RawTelemetry): void {
     // MSFS reports ~(0,0) on the menu/loading screen. The 1° box around the
     // origin sits entirely in the Gulf of Guinea — no real flight goes there.

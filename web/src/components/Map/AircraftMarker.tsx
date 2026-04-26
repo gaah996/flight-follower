@@ -24,15 +24,28 @@ export function AircraftMarker() {
     iconAnchor: [12, 12],
   });
 
-  const tooltipText =
-    plan?.flightNumber && plan?.aircraftType
-      ? `${plan.flightNumber} · ${plan.aircraftType}`
-      : plan?.flightNumber || plan?.aircraftType || 'Aircraft';
-
   return (
     <Marker position={[t.position.lat, t.position.lon]} icon={icon} interactive>
       <Tooltip direction="top" offset={[0, -16]} opacity={1}>
-        {tooltipText}
+        {plan?.flightNumber ? (
+          <>
+            <strong style={{ fontFamily: 'ui-monospace, monospace' }}>
+              {plan.flightNumber}
+            </strong>
+            {plan.aircraftType && (
+              <>
+                {' '}
+                <span style={{ fontSize: '0.8em', opacity: 0.7 }}>{plan.aircraftType}</span>
+              </>
+            )}
+          </>
+        ) : plan?.aircraftType ? (
+          <strong style={{ fontFamily: 'ui-monospace, monospace' }}>
+            {plan.aircraftType}
+          </strong>
+        ) : (
+          'Aircraft'
+        )}
       </Tooltip>
     </Marker>
   );

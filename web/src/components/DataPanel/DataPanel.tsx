@@ -1,27 +1,33 @@
-import { AltitudeCard } from './AltitudeCard.js';
-import { FlightInfoCard } from './FlightInfoCard.js';
+import { useFlightStore } from '../../store/flight.js';
+import { ClockCard } from './ClockCard.js';
+import { FetchPlanButton } from './FetchPlanButton.js';
+import { FlightPlanCard } from './FlightPlanCard.js';
+import { MotionCard } from './MotionCard.js';
 import { PositionCard } from './PositionCard.js';
-import { RouteCard } from './RouteCard.js';
 import { Section } from './Section.js';
-import { SpeedCard } from './SpeedCard.js';
-import { TimeCard } from './TimeCard.js';
+import { TripCard } from './TripCard.js';
 import { WindCard } from './WindCard.js';
 
 export function DataPanel() {
+  const plan = useFlightStore((s) => s.state.plan);
   return (
     <div style={{ overflowY: 'auto', height: '100%', padding: 12 }}>
-      <Section title="Aircraft state" sectionKey="state">
+      {!plan && (
+        <div style={{ marginBottom: 12 }}>
+          <FetchPlanButton />
+        </div>
+      )}
+      <Section title="Trip" sectionKey="trip">
+        <TripCard />
+      </Section>
+      <Section title="Now" sectionKey="now">
         <PositionCard />
-        <SpeedCard />
-        <AltitudeCard />
+        <MotionCard />
         <WindCard />
       </Section>
-      <Section title="Time" sectionKey="time">
-        <TimeCard />
-      </Section>
-      <Section title="Route" sectionKey="route">
-        <RouteCard />
-        <FlightInfoCard />
+      <Section title="Reference" sectionKey="reference">
+        <FlightPlanCard />
+        <ClockCard />
       </Section>
     </div>
   );
