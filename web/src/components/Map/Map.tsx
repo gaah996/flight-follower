@@ -1,6 +1,7 @@
 import { MapContainer, TileLayer } from 'react-leaflet';
 import { AircraftMarker } from './AircraftMarker.js';
 import { BreadcrumbTrail } from './BreadcrumbTrail.js';
+import { CenterButton } from './CenterButton.js';
 import { MapController } from './MapController.js';
 import { PlannedRoute } from './PlannedRoute.js';
 import { ViewModeControl } from './ViewModeControl.js';
@@ -32,6 +33,7 @@ export function Map() {
         <BreadcrumbTrail />
         <AircraftMarker />
         <MapController />
+        <CenterButton />
       </MapContainer>
       <ViewModeControl />
     </div>
