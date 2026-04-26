@@ -53,8 +53,8 @@ export function FlightPlanCard() {
             title={expanded ? 'Click to collapse' : 'Click to expand'}
             style={{
               width: '100%',
-              padding: '6px 8px',
-              borderRadius: 4,
+              padding: '4px 8px',
+              borderRadius: 10,
               background: 'var(--ff-bg)',
               border: '1px solid var(--ff-border)',
               fontSize: 12,

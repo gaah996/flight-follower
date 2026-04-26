@@ -17,9 +17,9 @@ export function MotionCard() {
             as FlightPlanCard's route block. Smaller text for "secondary detail". */}
         <div
           style={{
-            marginTop: 6,
-            padding: '6px 8px',
-            borderRadius: 4,
+            marginTop: 4,
+            padding: '3px 8px',
+            borderRadius: 10,
             background: 'var(--ff-bg)',
             border: '1px solid var(--ff-border)',
             fontSize: 12,
@@ -31,7 +31,7 @@ export function MotionCard() {
               {t ? `${fmtNum(t.speed.indicated, 0)} kt` : dash}
             </span>
           </div>
-          <div className="flex justify-between" style={{ marginTop: 2 }}>
+          <div className="flex justify-between">
             <span style={{ color: 'var(--ff-fg-muted)' }}>Mach</span>
             <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--ff-fg)' }}>
               {t ? fmtNum(t.speed.mach, 2) : dash}
