@@ -56,6 +56,11 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* DataPanel Row primitive: 0.25rem of space between consecutive rows. */
+.ff-row + .ff-row {
+  margin-top: 0.25rem;
+}
+
 /* Aircraft marker color */
 .ff-aircraft { color: var(--ff-aircraft); }
 
