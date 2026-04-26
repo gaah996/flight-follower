@@ -1,25 +1,28 @@
-import { Button, ButtonGroup } from '@heroui/react';
-import { useViewStore, type ViewMode } from '../../store/view.js';
+import { ToggleButton, ToggleButtonGroup } from "@heroui/react";
+import { useViewStore, type ViewMode } from "../../store/view.js";
 
-const MODES: ViewMode[] = ['overview', 'follow', 'manual'];
+const MODES: ViewMode[] = ["overview", "follow", "manual"];
 
 export function ViewModeControl() {
   const mode = useViewStore((s) => s.mode);
   const setMode = useViewStore((s) => s.setMode);
   return (
-    <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 1000 }}>
-      <ButtonGroup size="sm">
+    <div style={{ position: "absolute", top: 12, right: 48, zIndex: 1000 }}>
+      <ToggleButtonGroup
+        size="sm"
+        selectedKeys={new Set([mode])}
+        onSelectionChange={(keys) => {
+          const selected = Array.from(keys as Set<string>)[0];
+          if (selected) setMode(selected as ViewMode);
+        }}
+        className="bg-default rounded-full"
+      >
         {MODES.map((m) => (
-          <Button
-            key={m}
-            variant={mode === m ? 'primary' : 'ghost'}
-            onPress={() => setMode(m)}
-            className="capitalize"
-          >
+          <ToggleButton key={m} id={m} className="capitalize">
             {m}
-          </Button>
+          </ToggleButton>
         ))}
-      </ButtonGroup>
+      </ToggleButtonGroup>
     </div>
   );
 }

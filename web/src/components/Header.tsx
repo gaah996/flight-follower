@@ -1,6 +1,14 @@
-import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@heroui/react';
-import { ConnectionStatus } from './ConnectionStatus.js';
-import { ThemeToggle } from './ThemeToggle.js';
+import {
+  Button,
+  Separator,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@heroui/react";
+import { Gear } from "@gravity-ui/icons";
+import { ConnectionStatus } from "./ConnectionStatus.js";
+import { PanelToggle } from "./PanelToggle.js";
+import { ThemeToggle } from "./ThemeToggle.js";
 
 type Props = {
   onOpenSettings: () => void;
@@ -8,25 +16,23 @@ type Props = {
 
 export function Header({ onOpenSettings }: Props) {
   return (
-    <header
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 12px',
-        borderBottom: '1px solid var(--ff-border)',
-        background: 'var(--ff-bg-elevated)',
-        height: 40,
-      }}
-    >
-      <strong style={{ fontSize: 14, color: 'var(--ff-fg)' }}>Flight Follower</strong>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <header className="flex items-center justify-between px-3 h-10 border-b border-border bg-bg-elevated">
+      <strong className="text-md text-fg">Flight Follower</strong>
+      <div className="flex items-center gap-2">
         <ConnectionStatus />
+        <Separator orientation="vertical" className="h-6 self-center" />
         <ThemeToggle />
+        <PanelToggle />
         <Tooltip>
           <TooltipTrigger>
-            <Button isIconOnly size="sm" variant="ghost" aria-label="Settings" onPress={onOpenSettings}>
-              <span aria-hidden style={{ fontSize: 16 }}>⚙</span>
+            <Button
+              isIconOnly
+              size="sm"
+              variant="tertiary"
+              aria-label="Settings"
+              onPress={onOpenSettings}
+            >
+              <Gear width={16} height={16} />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Settings</TooltipContent>

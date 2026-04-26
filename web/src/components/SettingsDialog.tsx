@@ -1,11 +1,24 @@
-import { useEffect, useState } from 'react';
-import { Button, Input, Modal, useOverlayState } from '@heroui/react';
-import { fetchSimbriefPlan, getSettings, saveSettings } from '../api/rest.js';
-import { useViewStore } from '../store/view.js';
+import { useEffect, useState } from "react";
+import {
+  Alert,
+  Button,
+  Input,
+  InputGroup,
+  Label,
+  Modal,
+  TextField,
+  useOverlayState,
+} from "@heroui/react";
+import { fetchSimbriefPlan, getSettings, saveSettings } from "../api/rest.js";
+import { useViewStore } from "../store/view.js";
+import { Gear } from "@gravity-ui/icons";
 
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
-  const [userId, setUserId] = useState('');
-  const [status, setStatus] = useState<string | null>(null);
+  const [userId, setUserId] = useState("");
+  const [status, setStatus] = useState<{
+    kind: "success" | "danger";
+    text: string;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const overlayState = useOverlayState({
@@ -16,16 +29,20 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
   });
 
   useEffect(() => {
-    getSettings().then((s) => setUserId(s.simbriefUserId ?? ''));
+    getSettings().then((s) => setUserId(s.simbriefUserId ?? ""));
   }, []);
 
   async function onSave() {
     setBusy(true);
+    setStatus(null);
     try {
       await saveSettings({ simbriefUserId: userId.trim() || null });
-      setStatus('Saved.');
+      setStatus({ kind: "success", text: "Saved." });
     } catch (err) {
-      setStatus(`Save failed: ${(err as Error).message}`);
+      setStatus({
+        kind: "danger",
+        text: `Save failed: ${(err as Error).message}`,
+      });
     } finally {
       setBusy(false);
     }
@@ -38,57 +55,68 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
       await saveSettings({ simbriefUserId: userId.trim() || null });
       await fetchSimbriefPlan();
       const view = useViewStore.getState();
-      view.setMode('overview');
+      view.setMode("overview");
       view.requestFitOverview();
-      setStatus('Plan fetched.');
+      setStatus({ kind: "success", text: "Plan fetched." });
     } catch (err) {
-      setStatus(`Fetch failed: ${(err as Error).message}`);
+      setStatus({
+        kind: "danger",
+        text: `Fetch failed: ${(err as Error).message}`,
+      });
     } finally {
       setBusy(false);
     }
   }
 
-  const statusOk = status === 'Saved.' || status === 'Plan fetched.';
-
   return (
     <Modal state={overlayState}>
-      <Modal.Backdrop>
-        <Modal.Container>
+      <Modal.Backdrop variant="blur">
+        <Modal.Container size="md">
           <Modal.Dialog>
-            <Modal.Header>Settings</Modal.Header>
-            <Modal.Body>
-              <section aria-labelledby="simbrief-section">
-                <h3
-                  id="simbrief-section"
-                  style={{
-                    margin: '0 0 8px',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: 'var(--ff-fg-muted)',
-                    textTransform: 'uppercase',
-                    letterSpacing: 0.6,
-                  }}
-                >
-                  Simbrief
-                </h3>
-                <Input
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  placeholder="123456"
-                />
-              </section>
+            <Modal.Header>
+              <Modal.Icon className="bg-default text-foreground">
+                <Gear width={24} height={24} />
+              </Modal.Icon>
+              <Modal.Heading>Settings</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="py-4">
+              <TextField>
+                <Label>Simbrief User ID</Label>
+                <div className="flex gap-2">
+                  <Input
+                    variant="secondary"
+                    value={userId}
+                    onChange={(e) => setUserId(e.target.value)}
+                    placeholder="123456"
+                    aria-label="Pilot ID"
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="ghost"
+                    onPress={onFetch}
+                    isDisabled={busy || !userId.trim()}
+                    className="text-accent-soft-foreground"
+                  >
+                    Fetch latest plan
+                  </Button>
+                </div>
+              </TextField>
               {status && (
-                <p style={{ margin: '8px 0 0', color: statusOk ? '#16a34a' : '#dc2626', fontSize: 13 }}>
-                  {status}
-                </p>
+                <Alert status={status.kind}>
+                  <Alert.Indicator />
+                  <Alert.Content>
+                    <Alert.Title>{status.text}</Alert.Title>
+                  </Alert.Content>
+                </Alert>
               )}
             </Modal.Body>
             <Modal.Footer>
-              <Button variant="secondary" onPress={onSave} isDisabled={busy}>Save</Button>
-              <Button variant="primary" onPress={onFetch} isDisabled={busy || !userId.trim()}>
-                Fetch latest plan
+              <Button variant="tertiary" onPress={overlayState.close}>
+                Close
               </Button>
-              <Button variant="ghost" onPress={overlayState.close}>Close</Button>
+              <Button variant="primary" onPress={onSave} isDisabled={busy}>
+                Save
+              </Button>
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>

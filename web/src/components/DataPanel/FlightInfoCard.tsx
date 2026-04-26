@@ -46,7 +46,11 @@ export function FlightInfoCard() {
           onClick={() => setExpanded((v) => !v)}
           title={expanded ? 'Click to collapse' : 'Click to expand'}
           style={{
-            marginTop: 6,
+            marginTop: 8,
+            padding: '6px 8px',
+            borderRadius: 4,
+            background: 'var(--ff-bg)',
+            border: '1px solid var(--ff-border)',
             fontSize: 12,
             fontFamily: 'ui-monospace, monospace',
             color: 'var(--ff-fg-muted)',
