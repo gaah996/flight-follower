@@ -19,6 +19,7 @@
   --ff-bg: #ffffff;
   --ff-bg-elevated: #fafafa;
   --ff-bg-translucent: rgba(255, 255, 255, 0.5);
+  --ff-bg-modal-translucent: rgba(255, 255, 255, 0.3);
   --ff-border: #e5e7eb;
   --ff-accent: #2563eb;
   --ff-aircraft: #2563eb;
@@ -32,6 +33,7 @@
   --ff-bg: #09090b;
   --ff-bg-elevated: #18181b;
   --ff-bg-translucent: rgba(9, 9, 11, 0.5);
+  --ff-bg-modal-translucent: rgba(9, 9, 11, 0.3);
   --ff-border: #27272a;
   --ff-accent: #60a5fa;
   --ff-aircraft: #60a5fa;
@@ -86,9 +88,10 @@ body {
   z-index: 9999 !important;
 }
 
-/* Match the side panel's frosted-glass treatment for the modal backdrop. */
+/* Frosted-glass treatment for the modal backdrop, slightly more transparent
+   than the side panel (alpha 0.3 vs 0.5) so the modal feels lighter. */
 .modal__backdrop--blur {
-  background: var(--ff-bg-translucent) !important;
+  background: var(--ff-bg-modal-translucent) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
 }
