@@ -1,12 +1,34 @@
 import { useEffect, useState } from 'react';
 import type { Airport } from '@ff/shared';
 import { Card, Chip, Separator } from '@heroui/react';
+import { CircleFill } from '@gravity-ui/icons';
 import { useFlightStore } from '../../store/flight.js';
 import { dash, fmtDurationTier, fmtNum, fmtUtcTime } from './fmt.js';
 import { Row } from './Row.js';
 
 function airportLabel(a: Airport): string {
   return a.name ?? a.icao;
+}
+
+type EtaStatus = 'on-time' | 'slightly-late' | 'very-late';
+
+const ETA_STATUS_COLOR: Record<EtaStatus, string> = {
+  'on-time': '#16a34a',
+  'slightly-late': '#f59e0b',
+  'very-late': '#dc2626',
+};
+
+const ETA_STATUS_LABEL: Record<EtaStatus, string> = {
+  'on-time': 'On time / early',
+  'slightly-late': 'Slightly late',
+  'very-late': 'Very late',
+};
+
+function etaStatus(etaMs: number, scheduledMs: number): EtaStatus {
+  const lateMin = (etaMs - scheduledMs) / 60_000;
+  if (lateMin <= 5) return 'on-time';
+  if (lateMin <= 20) return 'slightly-late';
+  return 'very-late';
 }
 
 export function TripCard() {
@@ -41,6 +63,8 @@ export function TripCard() {
   const remaining =
     progress.distanceToDestNm != null ? `${fmtNum(progress.distanceToDestNm, 0)} nm` : dash;
   const eta = etaMs != null ? `${fmtUtcTime(etaMs)}z` : dash;
+  const etaStatusValue =
+    etaMs != null && plan.scheduledIn != null ? etaStatus(etaMs, plan.scheduledIn) : null;
 
   return (
     <Card variant="default">
@@ -78,7 +102,21 @@ export function TripCard() {
 
         <Row label="Remaining">{remaining}</Row>
         <Row label="ETE">{fmtDurationTier(progress.eteToDestSec)}</Row>
-        <Row label="ETA">{eta}</Row>
+        <Row label="ETA">
+          <span className="inline-flex items-center gap-1.5">
+            {eta}
+            {etaStatusValue && (
+              <CircleFill
+                width={8}
+                height={8}
+                style={{ color: ETA_STATUS_COLOR[etaStatusValue] }}
+                aria-label={ETA_STATUS_LABEL[etaStatusValue]}
+              >
+                <title>{ETA_STATUS_LABEL[etaStatusValue]}</title>
+              </CircleFill>
+            )}
+          </span>
+        </Row>
 
         {progress.nextWaypoint && (
           <>
