@@ -1,4 +1,5 @@
-import { Card } from '@heroui/react';
+import { Card, Separator } from '@heroui/react';
+import { PlaneFill } from '@gravity-ui/icons';
 import { useFlightStore } from '../../store/flight.js';
 import { dash, fmtLatHemi, fmtLonHemi, fmtNum } from './fmt.js';
 import { Row } from './Row.js';
@@ -15,17 +16,23 @@ export function PositionCard() {
       <Card.Content>
         <Row label="Lat">{lat}</Row>
         <Row label="Lon">{lon}</Row>
-        <div
-          style={{
-            marginTop: 6,
-            paddingTop: 6,
-            borderTop: '1px solid var(--ff-border)',
-            fontSize: 12,
-            color: 'var(--ff-fg-muted)',
-          }}
-        >
-          <Row label="HDG">{t ? `${fmtNum(t.heading.magnetic, 0)}°` : dash}</Row>
-        </div>
+        <Separator className="my-3" />
+        <Row label="HDG" tooltip="Magnetic heading">
+          <span className="inline-flex items-center gap-1.5">
+            {t ? `${fmtNum(t.heading.magnetic, 0)}°` : dash}
+            {t && (
+              <PlaneFill
+                width={12}
+                height={12}
+                style={{
+                  transform: `rotate(${t.heading.magnetic}deg)`,
+                  transformOrigin: 'center',
+                  color: 'var(--ff-fg-muted)',
+                }}
+              />
+            )}
+          </span>
+        </Row>
       </Card.Content>
     </Card>
   );

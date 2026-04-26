@@ -101,8 +101,10 @@ export function TripCard() {
         <Separator className="my-3" />
 
         <Row label="Remaining">{remaining}</Row>
-        <Row label="ETE">{fmtDurationTier(progress.eteToDestSec)}</Row>
-        <Row label="ETA">
+        <Row label="ETE" tooltip="Estimated time enroute (until destination)">
+          {fmtDurationTier(progress.eteToDestSec)}
+        </Row>
+        <Row label="ETA" tooltip="Estimated time of arrival (UTC)">
           <span className="inline-flex items-center gap-1.5">
             {eta}
             {etaStatusValue && (
