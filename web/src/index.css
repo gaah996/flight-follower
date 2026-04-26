@@ -20,6 +20,7 @@
   --ff-bg-elevated: #fafafa;
   --ff-bg-translucent: rgba(255, 255, 255, 0.5);
   --ff-bg-modal-translucent: rgba(255, 255, 255, 0.3);
+  --ff-bg-tooltip-translucent: rgba(255, 255, 255, 0.6);
   --ff-border: #e5e7eb;
   --ff-accent: #2563eb;
   --ff-aircraft: #2563eb;
@@ -34,6 +35,7 @@
   --ff-bg-elevated: #18181b;
   --ff-bg-translucent: rgba(9, 9, 11, 0.5);
   --ff-bg-modal-translucent: rgba(9, 9, 11, 0.3);
+  --ff-bg-tooltip-translucent: rgba(9, 9, 11, 0.6);
   --ff-border: #27272a;
   --ff-accent: #60a5fa;
   --ff-aircraft: #60a5fa;
@@ -64,17 +66,29 @@ body {
 /* Aircraft marker color */
 .ff-aircraft { color: var(--ff-aircraft); }
 
-/* Leaflet tooltip and attribution overrides for theme support */
+/* Leaflet tooltip and attribution overrides for theme support.
+   Tooltips use a frosted-glass treatment (translucent bg + blur) so they
+   read as the same material as the side panel and modal surfaces. Default
+   Leaflet arrows are hidden — the CSS-border triangle wouldn't carry the
+   rounded corners cleanly. opacity: 1 forces solidity over react-leaflet's
+   inline default of 0.9 (which would otherwise multiply our background's
+   alpha). */
 .leaflet-tooltip {
-  background: var(--ff-bg-elevated);
+  background: var(--ff-bg-tooltip-translucent);
   color: var(--ff-fg);
   border: 1px solid var(--ff-border);
+  border-radius: 12px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  opacity: 1 !important;
 }
-.leaflet-tooltip-top::before { border-top-color: var(--ff-border); }
-.leaflet-tooltip-bottom::before { border-bottom-color: var(--ff-border); }
-.leaflet-tooltip-left::before { border-left-color: var(--ff-border); }
-.leaflet-tooltip-right::before { border-right-color: var(--ff-border); }
+.leaflet-tooltip-top::before,
+.leaflet-tooltip-bottom::before,
+.leaflet-tooltip-left::before,
+.leaflet-tooltip-right::before {
+  display: none;
+}
 .leaflet-control-attribution {
   background: var(--ff-bg-elevated) !important;
   color: var(--ff-fg-muted) !important;
