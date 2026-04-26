@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card } from '@heroui/react';
 import { useFlightStore } from '../../store/flight.js';
-import { fmtDurationSec, fmtUtcTime } from './fmt.js';
+import { fmtDurationTier, fmtUtcTime } from './fmt.js';
 import { Row } from './Row.js';
 
 export function ClockCard() {
@@ -26,7 +26,7 @@ export function ClockCard() {
       </Card.Header>
       <Card.Content>
         <Row label="UTC now">{`${fmtUtcTime(now)}${usingSimTime ? ' (sim)' : ''}`}</Row>
-        <Row label="Elapsed">{fmtDurationSec(ft)}</Row>
+        <Row label="Elapsed">{fmtDurationTier(ft)}</Row>
       </Card.Content>
     </Card>
   );
