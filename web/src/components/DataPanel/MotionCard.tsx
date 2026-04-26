@@ -52,7 +52,7 @@ export function MotionCard() {
 
   return (
     <Card variant="default">
-      <Card.Header className="flex items-center justify-between">
+      <Card.Header className="flex flex-row items-center justify-between">
         <Card.Title>Motion</Card.Title>
         <OnGroundIndicator onGround={t?.onGround} />
       </Card.Header>
