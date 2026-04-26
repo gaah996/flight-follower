@@ -1,27 +1,25 @@
-import { AltitudeCard } from './AltitudeCard.js';
-import { FlightPlanCard as FlightInfoCard } from './FlightPlanCard.js';
+import { ClockCard } from './ClockCard.js';
+import { FlightPlanCard } from './FlightPlanCard.js';
+import { MotionCard } from './MotionCard.js';
 import { PositionCard } from './PositionCard.js';
-import { RouteCard } from './RouteCard.js';
 import { Section } from './Section.js';
-import { SpeedCard } from './SpeedCard.js';
-import { ClockCard as TimeCard } from './ClockCard.js';
+import { TripCard } from './TripCard.js';
 import { WindCard } from './WindCard.js';
 
 export function DataPanel() {
   return (
     <div style={{ overflowY: 'auto', height: '100%', padding: 12 }}>
-      <Section title="Aircraft state" sectionKey="state">
+      <Section title="Trip" sectionKey="trip">
+        <TripCard />
+      </Section>
+      <Section title="Now" sectionKey="now">
         <PositionCard />
-        <SpeedCard />
-        <AltitudeCard />
+        <MotionCard />
         <WindCard />
       </Section>
-      <Section title="Time" sectionKey="time">
-        <TimeCard />
-      </Section>
-      <Section title="Route" sectionKey="route">
-        <RouteCard />
-        <FlightInfoCard />
+      <Section title="Reference" sectionKey="reference">
+        <FlightPlanCard />
+        <ClockCard />
       </Section>
     </div>
   );
