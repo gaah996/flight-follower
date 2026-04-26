@@ -18,6 +18,7 @@
   --ff-fg-muted: #6b7280;
   --ff-bg: #ffffff;
   --ff-bg-elevated: #fafafa;
+  --ff-bg-translucent: rgba(255, 255, 255, 0.7);
   --ff-border: #e5e7eb;
   --ff-accent: #2563eb;
   --ff-aircraft: #2563eb;
@@ -30,6 +31,7 @@
   --ff-fg-muted: #a1a1aa;
   --ff-bg: #09090b;
   --ff-bg-elevated: #18181b;
+  --ff-bg-translucent: rgba(9, 9, 11, 0.7);
   --ff-border: #27272a;
   --ff-accent: #60a5fa;
   --ff-aircraft: #60a5fa;

@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer } from 'react-leaflet';
 import { AircraftMarker } from './AircraftMarker.js';
 import { BreadcrumbTrail } from './BreadcrumbTrail.js';
 import { MapController } from './MapController.js';
@@ -19,17 +18,6 @@ const TILE_URLS = {
 const ATTRIBUTION =
   '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
-function InvalidateOnPanelToggle() {
-  const map = useMap();
-  const panelVisible = useViewStore((s) => s.panelVisible);
-  useEffect(() => {
-    // Wait one frame for the grid layout to settle, then nudge Leaflet.
-    const id = window.requestAnimationFrame(() => map.invalidateSize());
-    return () => window.cancelAnimationFrame(id);
-  }, [panelVisible, map]);
-  return null;
-}
-
 export function Map() {
   const { lastCenter, lastZoom } = useViewStore.getState();
   const center = lastCenter ?? DEFAULT_CENTER;
@@ -44,7 +32,6 @@ export function Map() {
         <BreadcrumbTrail />
         <AircraftMarker />
         <MapController />
-        <InvalidateOnPanelToggle />
       </MapContainer>
       <ViewModeControl />
     </div>
