@@ -20,7 +20,7 @@ function OnGroundIndicator({ onGround }: { onGround: boolean | undefined }) {
       <TooltipTrigger>
         <span className="inline-flex" aria-label={label}>
           <svg
-            viewBox="0 0 16 16"
+            viewBox="0 0 13 13"
             width={14}
             height={14}
             style={{
@@ -29,18 +29,15 @@ function OnGroundIndicator({ onGround }: { onGround: boolean | undefined }) {
             }}
             aria-hidden
           >
-            {/* Y-shaped strut: nose wheel down to centre, then splays to mains */}
-            <path
-              d="M 8 4 L 8 8 M 3.5 11.5 L 8 8 L 12.5 11.5"
-              stroke="currentColor"
-              strokeWidth="1.25"
-              strokeLinecap="round"
-              fill="none"
-            />
-            {/* Three wheels: nose (top), main left, main right */}
-            <circle cx="8" cy="3" r="1.25" fill="currentColor" />
-            <circle cx="3" cy="12.5" r="1.25" fill="currentColor" />
-            <circle cx="13" cy="12.5" r="1.25" fill="currentColor" />
+            {/* Three wheels (filled hub + outline tire), arranged as nose +
+                two mains in a triangle. Struts dropped — the configuration
+                alone reads as a landing gear set. */}
+            <circle cx="6.5" cy="3" r="1.25" fill="currentColor" />
+            <circle cx="6.5" cy="3" r="2.5" stroke="currentColor" fill="none" />
+            <circle cx="3" cy="10" r="1.25" fill="currentColor" />
+            <circle cx="3" cy="10" r="2.5" stroke="currentColor" fill="none" />
+            <circle cx="10" cy="10" r="1.25" fill="currentColor" />
+            <circle cx="10" cy="10" r="2.5" stroke="currentColor" fill="none" />
           </svg>
         </span>
       </TooltipTrigger>
