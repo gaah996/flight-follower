@@ -74,6 +74,13 @@ body {
 }
 .leaflet-control-attribution a { color: var(--ff-accent) !important; }
 
+/* When the side panel is visible it overlays the right side of the map.
+   Push Leaflet's bottom-right control stack (attribution) past the panel
+   so it stays visible. The panel is 360px wide; we add 12px of gap. */
+.ff-panel-visible .leaflet-bottom.leaflet-right {
+  right: 372px;
+}
+
 /* HeroUI Modal — bump above Leaflet panes/controls (HeroUI ships z-50, Leaflet uses up to 1100) */
 .modal__backdrop {
   z-index: 9999 !important;

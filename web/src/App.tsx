@@ -13,7 +13,10 @@ export function App() {
   return (
     <div style={{ display: 'grid', gridTemplateRows: '40px 1fr', height: '100vh' }}>
       <Header onOpenSettings={() => setShowSettings(true)} />
-      <div style={{ position: 'relative', minHeight: 0 }}>
+      <div
+        className={panelVisible ? 'ff-panel-visible' : undefined}
+        style={{ position: 'relative', minHeight: 0 }}
+      >
         <Map />
         {panelVisible && (
           <aside
