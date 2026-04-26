@@ -8,9 +8,13 @@ Built for personal use while flying the FlyByWire A32NX, but works with any airc
 
 - Live aircraft position, altitude, speeds (GS / IAS / Mach), heading, vertical speed, and wind, refreshed at 2 Hz.
 - Breadcrumb trail of the actual flight path.
-- Simbrief flight plan import on demand — origin, waypoints, destination, alternate.
+- Simbrief flight plan import on demand — origin, waypoints, destination, alternate. Re-fetch any time from Settings or from the panel CTA when no plan is loaded.
+- Side panel grouped into **Trip / Now / Reference** sections: Trip (origin → destination, ETE, ETA), Now (Position / Motion / Wind cards with HD/TL component, on-ground gear indicator, multi-tier altitude+VS), Reference (flight-plan card with altitude profile glyph + alternate chip, clock card with TOC/TOD countdown and day-night glyph at the aircraft sub-point).
+- Map polish: softer origin/destination markers, frosted-glass tooltips, panel-aware centering — auto-fit and follow modes both compensate for the side-panel overlay.
 - Three map view modes: Overview (fit to origin → destination), Follow (auto-center on aircraft), Manual (sticky after dragging).
+- Scoped reset from Settings — clear aircraft data (breadcrumb + flight time), the loaded flight plan, or both — without restarting the server.
 - Graceful when the sim isn't running, Simbrief is unreachable, or no plan is loaded yet — the UI never crashes, missing values render as `—`.
+- Dark-by-default theme with a light/system toggle in the header.
 - Telemetry recording to JSONL for later replay (great for building dev fixtures).
 - Replay harness — develop the full UI without MSFS running.
 
@@ -155,18 +159,22 @@ The frontend has no automated tests — manual verification in the browser. The 
 
 ## Roadmap
 
-Things explicitly **not** in v1, but the architecture leaves room for them:
+Things explicitly **not** shipped yet, but the architecture leaves room for them:
 
 - **Flight logging** — persist each flight for later review (the aggregator already produces a clean stream; logging is a new consumer).
 - **3D / Cesium view** — `web/src/components/Map/` is the only place affected; data contracts are already coordinate-based.
 - **FBW A320 FMC reading** — capture the actual loaded FMC route as the planned line, instead of relying on Simbrief.
-- **Mid-flight plan refresh** — pull a fresh OFP from Simbrief without restarting.
 - **Electron packaging** — `start({…})` already takes paths as input and `node-simconnect` is pure-TS, so wrapping is straightforward.
+
+Smaller deferrals (UI polish, data additions, plan-driven TOC/TOD detection, etc.) live in [`docs/backlog.md`](./docs/backlog.md).
 
 ## Documents
 
-- [Design spec](./docs/superpowers/specs/2026-04-24-flight-follower-design.md) — what we're building and why
-- [Implementation plan](./docs/superpowers/plans/2026-04-24-flight-follower.md) — the task-by-task plan that built v1
+- [v1 design spec](./docs/superpowers/specs/2026-04-24-flight-follower-design.md) — what we're building and why
+- [v1 implementation plan](./docs/superpowers/plans/2026-04-24-flight-follower.md) — the task-by-task plan that built v1
+- [v1.1 design](./docs/superpowers/specs/2026-04-25-flight-follower-v1.1-design.md) and [v1.1 plan](./docs/superpowers/plans/2026-04-25-flight-follower-v1.1.md)
+- [v1.2 design](./docs/superpowers/specs/2026-04-25-flight-follower-v1.2-design.md) and [v1.2 plan](./docs/superpowers/plans/2026-04-25-flight-follower-v1.2.md)
+- [Backlog](./docs/backlog.md) — items deferred during brainstorming
 
 ## License
 

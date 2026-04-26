@@ -21,5 +21,33 @@ Items raised during brainstorming sessions that we explicitly chose **not** to d
 
 For traceability — these are not "deferred", they are scheduled:
 
-- **v1.2** — component library + dark mode, DataPanel layout / grouping, wind compass widget, default map tile style refinement, flight info card, **multi-tier position precision** (large 2 dp number with the extra 1–2 decimals rendered smaller / dimmer, e.g. `52.36`<sub>`41`</sub>`° N` — gets the best of "stable to glance at" and "finer detail visible if you look closer"; v1.1 ships flat 2 dp because the typography tiering wants to land with the rest of the design pass).
-- **v1.3** — breadcrumb altitude-coded gradient, skip-waypoint mechanism, TOC / TOD markers, origin → destination progress timeline bar, live ETA derived from `eteToDestSec`.
+- **v1.2** ✅ shipped — component library + dark mode, DataPanel layout / grouping (Trip / Now / Reference), wind compass widget, default map tile style refinement, flight-plan card, multi-tier position precision.
+- **v1.3** — breadcrumb altitude-coded gradient (with matching colours on the FlightPlanCard altitude-profile glyph), skip-waypoint mechanism, TOC / TOD markers on the map, origin → destination progress timeline bar, live ETA derived from `eteToDestSec`.
+
+## From v1.2 polish (2026-04-26)
+
+Items that came up during the card-by-card iteration but were intentionally not pursued in v1.2.
+
+### Card-level data additions
+
+- **Cost index** on FlightPlanCard — small avgeek detail (`CI 70` row).
+- **Cruise Mach** as a `.minor` sub-value next to the cruise FL (e.g. `FL380 M.78`).
+- **Average forecast HD/TL** on FlightPlanCard — Simbrief publishes a route-averaged wind component; would mirror the live HD/TL on the wind card and reinforce expected vs actual.
+
+### Clock card
+
+- **Plan-driven TOC / TOD detection** — current logic uses VS-based estimation for TOC and the 3:1 rule for TOD. A waypoint-scan against `plannedAltitude` would be more accurate (and fold naturally into the v1.3 TOC / TOD map markers).
+- **Local time at origin / destination** — tz-from-coordinate lookup; useful on long-haul.
+- **Sunrise / sunset at destination** — easy follow-up to the existing `isDaylight` calc.
+
+### Wind compass refinements
+
+Suggested but not picked when iterating; could land as small polish later.
+
+- **Arrow length proportional to wind speed** — clamp 0.4 → 1.0 of the radius. Reads "calm vs gale" instantly. Risk: very light winds get a tiny stub.
+- **HD/TL colour cue on the arrow** — tint the wind shaft red-ish when headwind dominates, green-ish when tailwind, neutral for crosswind.
+- **"Instrument glass" feel** — faint radial gradient inside the ring + thicker outer stroke, so the dial reads as a recessed gauge rather than a flat line drawing.
+
+### Motion card
+
+- **Parking-brake indicator** — counterpart to the on-ground landing-gear glyph in the header. Deferred ("park it for later"); fits the same fun-feature-per-card pattern.
