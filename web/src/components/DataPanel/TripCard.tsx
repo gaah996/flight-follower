@@ -61,10 +61,10 @@ export function TripCard() {
           </div>
           <div className="text-fg-muted self-center">→</div>
           <div className="flex flex-col gap-0.5 items-end min-w-0 text-right">
-            <div className="font-mono text-sm font-semibold">{plan.destination.icao}</div>
+            <div className="font-mono text-lg font-semibold leading-tight">{plan.destination.icao}</div>
             <div className="text-xs text-fg-muted">{airportLabel(plan.destination)}</div>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className="font-mono text-sm">{fmtUtcTime(plan.scheduledIn)}</span>
+              <span className="font-mono text-sm tabular-nums">{fmtUtcTime(plan.scheduledIn)}</span>
               {plan.scheduledIn != null && (
                 <Chip size="sm" variant="soft" color="default">
                   <Chip.Label>sched</Chip.Label>
