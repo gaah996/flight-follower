@@ -1,5 +1,5 @@
 import { useFlightStore } from '../../store/flight.js';
-import { fmtLatHemi, fmtLonHemi } from './fmt.js';
+import { dash, fmtLatHemi, fmtLonHemi, fmtNum } from './fmt.js';
 
 export function PositionCard() {
   const t = useFlightStore((s) => s.state.telemetry);
@@ -9,6 +9,17 @@ export function PositionCard() {
     <Card title="Position">
       <Row label="Lat">{lat}</Row>
       <Row label="Lon">{lon}</Row>
+      <div
+        style={{
+          marginTop: 6,
+          paddingTop: 6,
+          borderTop: '1px solid var(--ff-border)',
+          fontSize: 12,
+          color: 'var(--ff-fg-muted)',
+        }}
+      >
+        <Row label="HDG">{t ? `${fmtNum(t.heading.magnetic, 0)}°` : dash}</Row>
+      </div>
     </Card>
   );
 }
