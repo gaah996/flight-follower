@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Airport } from '@ff/shared';
-import { Card, Chip, Separator } from '@heroui/react';
+import { Card, Chip, Separator, Tooltip, TooltipContent, TooltipTrigger } from '@heroui/react';
 import { CircleFill } from '@gravity-ui/icons';
 import { useFlightStore } from '../../store/flight.js';
 import { dash, fmtDurationTier, fmtNum, fmtUtcTime } from './fmt.js';
@@ -106,14 +106,21 @@ export function TripCard() {
           <span className="inline-flex items-center gap-1.5">
             {eta}
             {etaStatusValue && (
-              <CircleFill
-                width={8}
-                height={8}
-                style={{ color: ETA_STATUS_COLOR[etaStatusValue] }}
-                aria-label={ETA_STATUS_LABEL[etaStatusValue]}
-              >
-                <title>{ETA_STATUS_LABEL[etaStatusValue]}</title>
-              </CircleFill>
+              <Tooltip>
+                <TooltipTrigger>
+                  <span
+                    className="inline-flex"
+                    aria-label={ETA_STATUS_LABEL[etaStatusValue]}
+                  >
+                    <CircleFill
+                      width={8}
+                      height={8}
+                      style={{ color: ETA_STATUS_COLOR[etaStatusValue] }}
+                    />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{ETA_STATUS_LABEL[etaStatusValue]}</TooltipContent>
+              </Tooltip>
             )}
           </span>
         </Row>
