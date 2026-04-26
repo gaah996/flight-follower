@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { Airport } from '@ff/shared';
+import { Card } from '@heroui/react';
 import { useFlightStore } from '../../store/flight.js';
-import { Card, Row } from './PositionCard.js';
 import { dash, fmtDurationSec, fmtNum, fmtUtcTime } from './fmt.js';
+import { Row } from './Row.js';
 
 function fmtAirport(a: Airport): string {
   return a.name ? `${a.icao} · ${a.name}` : a.icao;
@@ -23,8 +24,13 @@ export function TripCard() {
 
   if (!plan) {
     return (
-      <Card title="Trip">
-        <div style={{ color: 'var(--ff-fg-muted)' }}>Import a plan to see trip info.</div>
+      <Card variant="default">
+        <Card.Header>
+          <Card.Title>Trip</Card.Title>
+        </Card.Header>
+        <Card.Content>
+          <div style={{ color: 'var(--ff-fg-muted)' }}>Import a plan to see trip info.</div>
+        </Card.Content>
       </Card>
     );
   }
@@ -39,39 +45,43 @@ export function TripCard() {
   const eta = etaMs != null ? `${fmtUtcTime(etaMs)}z` : dash;
 
   return (
-    <Card title="Trip">
-      <div
-        style={{
-          fontSize: 14,
-          fontFamily: 'ui-monospace, monospace',
-          color: 'var(--ff-fg)',
-          lineHeight: 1.4,
-        }}
-      >
-        <div>{fmtAirport(plan.origin)}</div>
-        <div style={{ color: 'var(--ff-fg-muted)' }}>↓</div>
-        <div>{fmtAirport(plan.destination)}</div>
-      </div>
-      <div style={{ marginTop: 8 }}>
-        <Row label="To go">{distanceToGo}</Row>
-        <Row label="ETE">{eteToGo}</Row>
-        <Row label="ETA">{eta}</Row>
-      </div>
-      {progress.nextWaypoint && (
+    <Card variant="default">
+      <Card.Header>
+        <Card.Title>Trip</Card.Title>
+      </Card.Header>
+      <Card.Content>
         <div
           style={{
-            marginTop: 8,
-            paddingTop: 6,
-            borderTop: '1px solid var(--ff-border)',
-            fontSize: 12,
-            color: 'var(--ff-fg-muted)',
+            fontSize: 14,
             fontFamily: 'ui-monospace, monospace',
+            color: 'var(--ff-fg)',
+            lineHeight: 1.4,
           }}
         >
-          Next: {progress.nextWaypoint.ident}
-          {progress.distanceToNextNm != null ? ` · ${fmtNum(progress.distanceToNextNm, 1)} nm` : ''}
-          {progress.eteToNextSec != null ? ` · ${fmtDurationSec(progress.eteToNextSec)}` : ''}
+          <div>{fmtAirport(plan.origin)}</div>
+          <div style={{ color: 'var(--ff-fg-muted)' }}>↓</div>
+          <div>{fmtAirport(plan.destination)}</div>
         </div>
+        <div style={{ marginTop: 8 }}>
+          <Row label="To go">{distanceToGo}</Row>
+          <Row label="ETE">{eteToGo}</Row>
+          <Row label="ETA">{eta}</Row>
+        </div>
+      </Card.Content>
+      {progress.nextWaypoint && (
+        <Card.Footer>
+          <div
+            style={{
+              fontSize: 12,
+              color: 'var(--ff-fg-muted)',
+              fontFamily: 'ui-monospace, monospace',
+            }}
+          >
+            Next: {progress.nextWaypoint.ident}
+            {progress.distanceToNextNm != null ? ` · ${fmtNum(progress.distanceToNextNm, 1)} nm` : ''}
+            {progress.eteToNextSec != null ? ` · ${fmtDurationSec(progress.eteToNextSec)}` : ''}
+          </div>
+        </Card.Footer>
       )}
     </Card>
   );

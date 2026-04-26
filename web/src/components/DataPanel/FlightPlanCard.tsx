@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { Card } from '@heroui/react';
 import { useFlightStore } from '../../store/flight.js';
-import { Card, Row } from './PositionCard.js';
 import { dash, fmtUtcTime } from './fmt.js';
+import { Row } from './Row.js';
 
 function fmtFL(ft: number | undefined): string {
   if (ft == null) return dash;
@@ -16,8 +17,13 @@ export function FlightPlanCard() {
 
   if (!plan) {
     return (
-      <Card title="Flight plan">
-        <div style={{ color: 'var(--ff-fg-muted)' }}>Import a plan to see flight plan details.</div>
+      <Card variant="default">
+        <Card.Header>
+          <Card.Title>Flight plan</Card.Title>
+        </Card.Header>
+        <Card.Content>
+          <div style={{ color: 'var(--ff-fg-muted)' }}>Import a plan to see flight plan details.</div>
+        </Card.Content>
       </Card>
     );
   }
@@ -29,43 +35,41 @@ export function FlightPlanCard() {
     : plan.aircraftType ?? dash;
 
   return (
-    <Card title="Flight plan">
-      <div
-        style={{
-          fontSize: 14,
-          fontWeight: 600,
-          fontFamily: 'ui-monospace, monospace',
-          marginBottom: 4,
-        }}
-      >
-        {callsign}
-      </div>
-      <Row label="Cruise">{fmtFL(plan.cruiseAltitudeFt)}</Row>
-      <Row label="Distance">{plan.totalDistanceNm != null ? `${plan.totalDistanceNm} nm` : dash}</Row>
-      <Row label="UTC dep">{fmtUtcTime(plan.scheduledOut)}</Row>
-      <Row label="UTC arr">{fmtUtcTime(plan.scheduledIn)}</Row>
+    <Card variant="default">
+      <Card.Header>
+        <Card.Title>Flight plan</Card.Title>
+        <Card.Description>{callsign}</Card.Description>
+      </Card.Header>
+      <Card.Content>
+        <Row label="Cruise">{fmtFL(plan.cruiseAltitudeFt)}</Row>
+        <Row label="Distance">{plan.totalDistanceNm != null ? `${plan.totalDistanceNm} nm` : dash}</Row>
+        <Row label="UTC dep">{fmtUtcTime(plan.scheduledOut)}</Row>
+        <Row label="UTC arr">{fmtUtcTime(plan.scheduledIn)}</Row>
+      </Card.Content>
       {plan.routeString && (
-        <div
-          onClick={() => setExpanded((v) => !v)}
-          title={expanded ? 'Click to collapse' : 'Click to expand'}
-          style={{
-            marginTop: 8,
-            padding: '6px 8px',
-            borderRadius: 4,
-            background: 'var(--ff-bg)',
-            border: '1px solid var(--ff-border)',
-            fontSize: 12,
-            fontFamily: 'ui-monospace, monospace',
-            color: 'var(--ff-fg-muted)',
-            cursor: 'pointer',
-            whiteSpace: expanded ? 'normal' : 'nowrap',
-            overflow: expanded ? 'visible' : 'hidden',
-            textOverflow: expanded ? 'clip' : 'ellipsis',
-            wordBreak: expanded ? 'break-all' : undefined,
-          }}
-        >
-          {plan.routeString}
-        </div>
+        <Card.Footer>
+          <div
+            onClick={() => setExpanded((v) => !v)}
+            title={expanded ? 'Click to collapse' : 'Click to expand'}
+            style={{
+              width: '100%',
+              padding: '6px 8px',
+              borderRadius: 4,
+              background: 'var(--ff-bg)',
+              border: '1px solid var(--ff-border)',
+              fontSize: 12,
+              fontFamily: 'ui-monospace, monospace',
+              color: 'var(--ff-fg-muted)',
+              cursor: 'pointer',
+              whiteSpace: expanded ? 'normal' : 'nowrap',
+              overflow: expanded ? 'visible' : 'hidden',
+              textOverflow: expanded ? 'clip' : 'ellipsis',
+              wordBreak: expanded ? 'break-all' : undefined,
+            }}
+          >
+            {plan.routeString}
+          </div>
+        </Card.Footer>
       )}
     </Card>
   );
