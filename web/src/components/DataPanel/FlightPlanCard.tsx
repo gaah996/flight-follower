@@ -17,7 +17,7 @@ export function FlightPlanCard() {
   if (!plan) {
     return (
       <Card title="Flight plan">
-        <div style={{ color: 'var(--ff-fg-muted)' }}>Import a plan to see flight info.</div>
+        <div style={{ color: 'var(--ff-fg-muted)' }}>Import a plan to see flight plan details.</div>
       </Card>
     );
   }
