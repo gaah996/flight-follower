@@ -29,7 +29,22 @@ async function main() {
   }
 
   const lines = readFileSync(fixturePath, 'utf8').split('\n').filter(Boolean);
-  const allEvents: RawTelemetry[] = lines.map((l) => JSON.parse(l) as RawTelemetry);
+  // Backfill v1.3 fields when replaying fixtures captured pre-v1.3. Older
+  // fixtures only have heading.magnetic; map true / track to it as a sensible
+  // default. altitude.indicated stays undefined; the FE Alt row falls back
+  // to MSL when indicated is absent.
+  type LegacyTelemetry = Omit<RawTelemetry, 'heading' | 'track'> & {
+    heading: { magnetic: number; true?: number };
+    track?: { true?: number };
+  };
+  const allEvents: RawTelemetry[] = lines.map((l) => {
+    const raw = JSON.parse(l) as LegacyTelemetry;
+    return {
+      ...raw,
+      heading: { magnetic: raw.heading.magnetic, true: raw.heading.true ?? raw.heading.magnetic },
+      track: { true: raw.track?.true ?? raw.heading.magnetic },
+    };
+  });
   const firstTs = allEvents[0]?.timestamp ?? 0;
   const skipIdx = startMs > 0
     ? allEvents.findIndex((e) => e.timestamp - firstTs >= startMs)

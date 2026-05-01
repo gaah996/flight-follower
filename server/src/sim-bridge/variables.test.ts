@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { buildTelemetry } from './variables.js';
 
 // Order in SIM_VARS:
-//   lat, lon, alt, gs, ias, mach, hdg, vs, windDir, windVel, onGround,
+//   lat, lon, altMsl, altIndicated, gs, ias, mach,
+//   hdgMag, hdgTrue, trackTrue, vs, windDir, windVel, onGround,
 //   zuluYear, zuluMonth, zuluDay, zuluTime
-const baseValues = [52.36, 13.51, 1000, 200, 200, 0.3, 90, 0, 270, 12, 0];
+const baseValues = [52.36, 13.51, 1000, 9500, 200, 200, 0.3, 90, 45, 47, 0, 270, 12, 0];
 
 describe('buildTelemetry', () => {
   it('composes simTimeUtc from ZULU YEAR/MONTH/DAY/TIME', () => {
@@ -22,6 +23,9 @@ describe('buildTelemetry', () => {
     const t = buildTelemetry([...baseValues, 2026, 4, 25, 0], 1000);
     expect(t.position).toEqual({ lat: 52.36, lon: 13.51 });
     expect(t.heading.magnetic).toBe(90);
+    expect(t.heading.true).toBeCloseTo(45);
+    expect(t.track.true).toBeCloseTo(47);
+    expect(t.altitude.indicated).toBeCloseTo(9500);
     expect(t.timestamp).toBe(1000);
   });
 
