@@ -20,6 +20,8 @@ const FixSchema = z.object({
 const TimesSchema = z.object({
   sched_out: numFromStr.optional(),
   sched_in: numFromStr.optional(),
+  sched_block: numFromStr.optional(),
+  est_block: numFromStr.optional(),
 });
 
 const GeneralSchema = z.object({
@@ -52,6 +54,10 @@ export function parseSimbriefOfp(raw: unknown): FlightPlan {
   const ofp = OfpSchema.parse(raw);
   const schedOutSec = ofp.times?.sched_out;
   const schedInSec = ofp.times?.sched_in;
+  // est_block is what Simbrief shows as the OFP's "block time" (gate-to-gate,
+  // wind-adjusted). Falls back to sched_block when an estimate isn't present.
+  // Both are in seconds. See docs/notes/spike-waypoint-constraints.md.
+  const blockTimeSec = ofp.times?.est_block ?? ofp.times?.sched_block;
 
   const flightNumber =
     ofp.general?.icao_airline && ofp.general?.flight_number
@@ -96,5 +102,6 @@ export function parseSimbriefOfp(raw: unknown): FlightPlan {
     cruiseAltitudeFt: ofp.general?.initial_altitude,
     totalDistanceNm,
     routeString,
+    blockTimeSec,
   };
 }

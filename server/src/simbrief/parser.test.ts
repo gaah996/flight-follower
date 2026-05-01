@@ -26,7 +26,7 @@ describe('parseSimbriefOfp', () => {
 
   it('produces a waypoint list in order', () => {
     const plan = parseSimbriefOfp(fixture);
-    expect(plan.waypoints.map((w) => w.ident)).toEqual(['MID', 'OKRIX', 'BAN']);
+    expect(plan.waypoints.map((w) => w.ident)).toEqual(['MID', 'TOC', 'OKRIX', 'TOD', 'BAN']);
   });
 
   it('sets fetchedAt to a timestamp around now', () => {
@@ -128,5 +128,35 @@ describe('parseSimbriefOfp', () => {
   it('omits aircraftType when the aircraft block has no icao_code', () => {
     const noCode = { ...fixture, aircraft: {} };
     expect(parseSimbriefOfp(noCode).aircraftType).toBeUndefined();
+  });
+
+  it('extracts blockTimeSec from times.est_block (seconds, preferred)', () => {
+    const plan = parseSimbriefOfp(fixture);
+    expect(plan.blockTimeSec).toBe(6900);
+  });
+
+  it('falls back to times.sched_block when est_block is absent', () => {
+    const without = {
+      ...fixture,
+      times: { sched_out: '1714053600', sched_in: '1714060800', sched_block: '7200' },
+    };
+    const plan = parseSimbriefOfp(without);
+    expect(plan.blockTimeSec).toBe(7200);
+  });
+
+  it('omits blockTimeSec when neither est_block nor sched_block is present', () => {
+    const without = {
+      ...fixture,
+      times: { sched_out: '1714053600', sched_in: '1714060800' },
+    };
+    const plan = parseSimbriefOfp(without);
+    expect(plan.blockTimeSec).toBeUndefined();
+  });
+
+  it('keeps TOC and TOD waypoints in the parsed waypoint list', () => {
+    const plan = parseSimbriefOfp(fixture);
+    const idents = plan.waypoints.map((w) => w.ident);
+    expect(idents).toContain('TOC');
+    expect(idents).toContain('TOD');
   });
 });
