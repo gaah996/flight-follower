@@ -10,7 +10,7 @@
 
 **Spec:** [`docs/superpowers/specs/2026-05-01-flight-follower-v1.3-design.md`](../specs/2026-05-01-flight-follower-v1.3-design.md)
 
-**Branch:** Implementation runs on a new feature branch: `feat/v1.3-implementation`. Create it as the first action before Task 1.
+**Branch:** Implementation runs on a new feature branch: `feat/v1.3-implementation`. Create it as the first action before Task 0.
 
 ```bash
 git checkout -b feat/v1.3-implementation
@@ -70,6 +70,94 @@ git checkout -b feat/v1.3-implementation
 - Web typecheck: `npx tsc -p web --noEmit`
 - Production build: `npm run build`
 - Replay manual verification: `npm run dev:replay -- scripts/fixtures/replay-eddb-lipz.jsonl` (or `replay-nzqn-nzwn.jsonl`) plus `npm --workspace web run dev`, then visit `http://localhost:5173`.
+
+---
+
+## Milestone 0 — Fixture preparation (Task 0)
+
+One-shot extension of the NZQN fixture so v1.3's heading-true and altitude-indicated bug fixes are verifiable against the replay.
+
+---
+
+## Task 0: Extend NZQN fixture with synthesized v1.3 fields
+
+**Files:**
+- Create: `scripts/extend-fixture-v1.3.ts` (one-shot, retained as a small utility for future fixture migrations).
+- Modify: `scripts/fixtures/replay-nzqn-nzwn.jsonl` (in place).
+
+The NZQN fixture was recorded before v1.3 added `heading.true`, `track.true`, and `altitude.indicated`. Without real values, the magnetic-vs-true map plane-icon bug fix can't be visually verified against the replay (the backfill in Task 5 sets `true = magnetic`, hiding the very delta we want to test). EDDB→LIPZ stays untouched — magvar there is too small (~5°) for the synthesis to be visually meaningful.
+
+**Synthesis:**
+
+| Field | Synthesized value | Reasoning |
+|---|---|---|
+| `heading.true` | `(heading.magnetic + 22) mod 360` | Magvar at NZ is ~+22°E during the recording window; offset matches the NZQN bug-reproduction conditions. |
+| `track.true` | `(heading.magnetic + 22) mod 360` | Same offset; close to true track for in-trim cruise. |
+| `altitude.indicated` | `max(0, altitude.msl - 100)` | Small synthetic delta so MotionCard's Alt row visibly differs from the breadcrumb's MSL value. |
+
+- [ ] **Step 1: Create the extension script**
+
+Create `scripts/extend-fixture-v1.3.ts`:
+
+```ts
+import { readFileSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const path = resolve(process.argv[2] ?? 'scripts/fixtures/replay-nzqn-nzwn.jsonl');
+const MAGVAR_DEG = Number(process.env.MAGVAR_DEG ?? 22);
+const ALT_OFFSET_FT = Number(process.env.ALT_OFFSET_FT ?? -100);
+
+const lines = readFileSync(path, 'utf8').split('\n').filter(Boolean);
+
+let extended = 0;
+const out = lines.map((line) => {
+  const t = JSON.parse(line);
+  const magnetic = t.heading?.magnetic ?? 0;
+  const trueHdg = ((magnetic + MAGVAR_DEG) % 360 + 360) % 360;
+  const indicated = Math.max(0, (t.altitude?.msl ?? 0) + ALT_OFFSET_FT);
+  extended++;
+  return JSON.stringify({
+    ...t,
+    heading: { magnetic, true: trueHdg },
+    track: { true: trueHdg },
+    altitude: { msl: t.altitude?.msl ?? 0, indicated },
+  });
+});
+
+writeFileSync(path, out.join('\n') + '\n');
+console.log(`extended ${extended} lines in ${path} (magvar=${MAGVAR_DEG}°, alt offset=${ALT_OFFSET_FT}ft)`);
+```
+
+- [ ] **Step 2: Run the script against the NZQN fixture**
+
+```bash
+npx tsx scripts/extend-fixture-v1.3.ts scripts/fixtures/replay-nzqn-nzwn.jsonl
+```
+
+Expected output: `extended 5386 lines in .../replay-nzqn-nzwn.jsonl (magvar=22°, alt offset=-100ft)`
+
+- [ ] **Step 3: Verify the result**
+
+```bash
+head -1 scripts/fixtures/replay-nzqn-nzwn.jsonl | jq '.heading, .track, .altitude'
+```
+
+Expected: `heading` has both `magnetic` and `true` (differing by ~22°), `track.true` matches, `altitude.indicated` ~100ft below `altitude.msl`.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add scripts/extend-fixture-v1.3.ts scripts/fixtures/replay-nzqn-nzwn.jsonl
+git commit -m "fixtures: synthesize heading.true / track.true / altitude.indicated for NZQN
+
+Pre-v1.3 recording lacked the new SimVar fields. Extension synthesizes
+them with magvar=+22°E (NZQN region) and a -100ft indicated offset so
+v1.3's true-vs-magnetic and indicated-vs-MSL plumbing is visibly
+testable against this replay.
+
+EDDB→LIPZ stays unmodified (magvar ~5°E is too small to be visible);
+the replay loader's backfill (Task 5) handles it transparently."
+```
 
 ---
 
