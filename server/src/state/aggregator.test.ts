@@ -56,8 +56,8 @@ describe('Aggregator basics', () => {
 
   it('does not append a new breadcrumb within 5 s and <2° heading change', () => {
     const a = new Aggregator();
-    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 50, lon: 10 }, onGround: true, heading: { magnetic: 0 } }));
-    a.ingestTelemetry(telem({ timestamp: 1000, position: { lat: 50, lon: 10.001 }, onGround: true, heading: { magnetic: 1 } }));
+    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 50, lon: 10 }, onGround: true, heading: { magnetic: 0, true: 0 } }));
+    a.ingestTelemetry(telem({ timestamp: 1000, position: { lat: 50, lon: 10.001 }, onGround: true, heading: { magnetic: 1, true: 1 } }));
     expect(a.getState().breadcrumb).toHaveLength(1);
   });
 
@@ -70,8 +70,8 @@ describe('Aggregator basics', () => {
 
   it('appends on >2° heading change even within 5 s', () => {
     const a = new Aggregator();
-    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 50, lon: 10 }, onGround: true, heading: { magnetic: 0 } }));
-    a.ingestTelemetry(telem({ timestamp: 1000, position: { lat: 50, lon: 10.001 }, onGround: true, heading: { magnetic: 10 } }));
+    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 50, lon: 10 }, onGround: true, heading: { magnetic: 0, true: 0 } }));
+    a.ingestTelemetry(telem({ timestamp: 1000, position: { lat: 50, lon: 10.001 }, onGround: true, heading: { magnetic: 10, true: 10 } }));
     expect(a.getState().breadcrumb).toHaveLength(2);
   });
 
@@ -308,5 +308,65 @@ describe('Aggregator resetAll', () => {
     a.resetAll();
     expect(stateCount).toBe(1);
     expect(planCount).toBe(0);
+  });
+});
+
+describe('Aggregator TOC/TOD', () => {
+  const PLAN_WITH_NAMED: FlightPlan = {
+    fetchedAt: 0,
+    origin: { icao: 'AAAA', lat: 0, lon: 0 },
+    destination: { icao: 'BBBB', lat: 0, lon: 10 },
+    waypoints: [
+      { ident: 'W1', lat: 0, lon: 1, plannedAltitude: 10000 },
+      { ident: 'TOC', lat: 0, lon: 2, plannedAltitude: 36000 },
+      { ident: 'W2', lat: 0, lon: 5, plannedAltitude: 36000 },
+      { ident: 'TOD', lat: 0, lon: 8, plannedAltitude: 36000 },
+      { ident: 'W3', lat: 0, lon: 9, plannedAltitude: 10000 },
+    ],
+    cruiseAltitudeFt: 36000,
+  };
+
+  it('exposes tocPosition and todPosition once a plan loads', () => {
+    const a = new Aggregator();
+    a.setPlan(PLAN_WITH_NAMED);
+    const s = a.getState();
+    expect(s.progress.tocPosition).toEqual({ lat: 0, lon: 2 });
+    expect(s.progress.todPosition).toEqual({ lat: 0, lon: 8 });
+  });
+
+  it('computes eteToTocSec from current GS and distance to TOC', () => {
+    const a = new Aggregator();
+    a.setPlan(PLAN_WITH_NAMED);
+    // Sit just outside the (0,0) MSFS pre-spawn filter so the frame is
+    // accepted; position still well short of TOC at lon: 2.
+    a.ingestTelemetry(
+      telem({
+        timestamp: 0,
+        position: { lat: 1.001, lon: 0 },
+        onGround: false,
+        speed: { ground: 60, indicated: 60, mach: 0.1 },
+      }),
+    );
+    const s = a.getState();
+    expect(s.progress.eteToTocSec).not.toBeNull();
+    expect(s.progress.eteToTocSec!).toBeGreaterThan(0);
+  });
+
+  it('returns null tocPosition / todPosition when no plan is loaded', () => {
+    const a = new Aggregator();
+    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 0, lon: 0 }, onGround: false }));
+    const s = a.getState();
+    expect(s.progress.tocPosition).toBeNull();
+    expect(s.progress.todPosition).toBeNull();
+    expect(s.progress.eteToTocSec).toBeNull();
+    expect(s.progress.eteToTodSec).toBeNull();
+  });
+
+  it('clears TOC/TOD on resetPlan', () => {
+    const a = new Aggregator();
+    a.setPlan(PLAN_WITH_NAMED);
+    a.resetPlan();
+    expect(a.getState().progress.tocPosition).toBeNull();
+    expect(a.getState().progress.todPosition).toBeNull();
   });
 });

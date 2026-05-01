@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import type { FlightPlan, FlightProgress, FlightState, RawTelemetry } from '@ff/shared';
 import { haversineNm } from '../route-math/distance.js';
 import { advancePassedIndex, distanceToWaypointNm, eteSeconds } from '../route-math/progress.js';
+import { findTOC, findTOD } from '../route-math/cruise-points.js';
 
 const BREADCRUMB_INTERVAL_MS = 5000;
 const HEADING_DELTA_DEG = 2;
@@ -14,6 +15,10 @@ const EMPTY_PROGRESS: FlightProgress = {
   distanceToDestNm: null,
   eteToDestSec: null,
   flightTimeSec: null,
+  tocPosition: null,
+  todPosition: null,
+  eteToTocSec: null,
+  eteToTodSec: null,
 };
 
 export class Aggregator extends EventEmitter {
@@ -108,8 +113,18 @@ export class Aggregator extends EventEmitter {
   private computeProgress(t: RawTelemetry | null, plan: FlightPlan | null): FlightProgress {
     const flightTimeSec =
       t == null || this.takeoffAt == null ? null : Math.max(0, (t.timestamp - this.takeoffAt) / 1000);
-    if (t == null || plan == null) {
+    if (plan == null) {
       return { ...EMPTY_PROGRESS, flightTimeSec };
+    }
+    if (t == null) {
+      // Surface TOC/TOD positions as soon as a plan loads, even before any
+      // telemetry has arrived (lets the map markers render immediately).
+      return {
+        ...EMPTY_PROGRESS,
+        flightTimeSec,
+        tocPosition: findTOC(plan.waypoints, plan.cruiseAltitudeFt),
+        todPosition: findTOD(plan.waypoints, plan.cruiseAltitudeFt),
+      };
     }
     this.passedIndex = advancePassedIndex(t.position, plan.waypoints, this.passedIndex, WAYPOINT_PASS_THRESHOLD_NM);
     const nextIdx = this.passedIndex + 1;
@@ -117,6 +132,18 @@ export class Aggregator extends EventEmitter {
     const distNext = nextWp ? distanceToWaypointNm(t.position, nextWp) : null;
     const distDest = haversineNm(t.position.lat, t.position.lon, plan.destination.lat, plan.destination.lon);
     const gs = t.speed.ground;
+
+    const tocPosition = findTOC(plan.waypoints, plan.cruiseAltitudeFt);
+    const todPosition = findTOD(plan.waypoints, plan.cruiseAltitudeFt);
+    const distToToc =
+      tocPosition == null
+        ? null
+        : haversineNm(t.position.lat, t.position.lon, tocPosition.lat, tocPosition.lon);
+    const distToTod =
+      todPosition == null
+        ? null
+        : haversineNm(t.position.lat, t.position.lon, todPosition.lat, todPosition.lon);
+
     return {
       nextWaypoint: nextWp,
       distanceToNextNm: distNext,
@@ -124,6 +151,10 @@ export class Aggregator extends EventEmitter {
       distanceToDestNm: distDest,
       eteToDestSec: eteSeconds(distDest, gs),
       flightTimeSec,
+      tocPosition,
+      todPosition,
+      eteToTocSec: distToToc == null ? null : eteSeconds(distToToc, gs),
+      eteToTodSec: distToTod == null ? null : eteSeconds(distToTod, gs),
     };
   }
 
