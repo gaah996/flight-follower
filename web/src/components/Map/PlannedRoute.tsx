@@ -14,7 +14,9 @@ export function PlannedRoute() {
   return (
     <>
       <Polyline positions={all} pathOptions={{ color: '#a855f7', weight: 2, dashArray: '6 4' }} />
-      {plan.waypoints.map((w) => (
+      {plan.waypoints
+        .filter((w) => w.ident !== 'TOC' && w.ident !== 'TOD')
+        .map((w) => (
         <CircleMarker
           key={`${w.ident}-${w.lat}-${w.lon}`}
           center={[w.lat, w.lon]}
