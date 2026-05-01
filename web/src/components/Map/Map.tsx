@@ -28,7 +28,7 @@ export function Map() {
   const tileUrl = TILE_URLS[theme];
   return (
     <div style={{ position: 'relative', height: '100%', width: '100%' }}>
-      <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%' }} worldCopyJump>
+      <MapContainer center={center} zoom={zoom} minZoom={3} style={{ height: '100%', width: '100%' }} worldCopyJump>
         <TileLayer key={tileUrl} attribution={ATTRIBUTION} url={tileUrl} />
         <PlannedRoute />
         <CruisePoints />

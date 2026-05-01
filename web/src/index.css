@@ -20,10 +20,11 @@
   --ff-bg-elevated: #fafafa;
   --ff-bg-translucent: rgba(255, 255, 255, 0.5);
   --ff-bg-modal-translucent: rgba(255, 255, 255, 0.3);
-  --ff-bg-tooltip-translucent: rgba(255, 255, 255, 0.6);
+  --ff-bg-tooltip-translucent: rgba(255, 255, 255, 0.85);
   --ff-border: #e5e7eb;
   --ff-accent: #2563eb;
   --ff-aircraft: #2563eb;
+  --ff-alternate: #2563eb;
   --ff-compass-arrow: #2563eb;
   --ff-compass-heading: #6b7280;
 }
@@ -39,6 +40,7 @@
   --ff-border: #27272a;
   --ff-accent: #60a5fa;
   --ff-aircraft: #60a5fa;
+  --ff-alternate: #60a5fa;
   --ff-compass-arrow: #60a5fa;
   --ff-compass-heading: #a1a1aa;
 }

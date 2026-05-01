@@ -50,6 +50,20 @@ export function PlannedRoute() {
           )}
         </Tooltip>
       </CircleMarker>
+      {plan.alternate && (
+        <CircleMarker
+          center={[plan.alternate.lat, plan.alternate.lon]}
+          radius={5}
+          pathOptions={{ color: 'var(--ff-alternate)', fillColor: '#fff', fillOpacity: 1 }}
+        >
+          <Tooltip direction="top" offset={[0, -8]}>
+            <strong style={{ fontFamily: 'ui-monospace, monospace' }}>{plan.alternate.icao}</strong>
+            {plan.alternate.name && (
+              <div style={{ fontSize: '0.8em', opacity: 0.7 }}>{plan.alternate.name}</div>
+            )}
+          </Tooltip>
+        </CircleMarker>
+      )}
     </>
   );
 }
