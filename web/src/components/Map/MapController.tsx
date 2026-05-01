@@ -27,11 +27,12 @@ export function MapController() {
       if (mode !== 'manual') setMode('manual');
     },
     zoomstart: () => {
-      // Any user-initiated zoom (in or out) promotes Overview/Follow → Manual.
-      // Programmatic zoom (fitBounds, panTo) is gated by the same flag the
-      // dragstart handler uses.
+      // User-initiated zoom demotes Overview → Manual (Overview's auto-fit
+      // would otherwise immediately revert the zoom). Follow keeps Follow:
+      // zooming while following is a useful "see more around me" gesture
+      // and the auto-pan should keep tracking the aircraft.
       if (programmatic.current) return;
-      if (mode !== 'manual') setMode('manual');
+      if (mode === 'overview') setMode('manual');
     },
     moveend: () => {
       const c = map.getCenter();
