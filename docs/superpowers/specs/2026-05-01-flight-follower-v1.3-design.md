@@ -62,7 +62,9 @@ The current FlightPlanCard glyph derives its gradient inline; that derivation mo
 
 ### 4.2 TOC / TOD — plan-driven markers and countdown rework
 
-**Computation (server-side).** A new pure module `server/src/route-math/cruise-points.ts` exports:
+**Computation (server-side).** Simbrief publishes **explicit TOC and TOD waypoints** in the navlog (idents literally `"TOC"` and `"TOD"`). The current map already renders them as ordinary fixes; v1.3 promotes them to first-class `tocPosition` / `todPosition` fields and uses them for the countdown.
+
+A new pure module `server/src/route-math/cruise-points.ts` exports:
 
 ```ts
 export function findTOC(waypoints: Waypoint[], cruiseAltitudeFt?: number): LatLon | null;
@@ -71,12 +73,15 @@ export function findTOD(waypoints: Waypoint[], cruiseAltitudeFt?: number): LatLo
 
 Algorithm:
 
-- **TOC** — scan waypoints in order. The first waypoint whose `plannedAltitude` reaches the cruise altitude (or the highest planned altitude if no `cruiseAltitudeFt` is provided) is the TOC fix. The geographic position of that waypoint is the TOC marker.
-- **TOD** — scan waypoints in reverse. The last waypoint at cruise altitude before a sustained descent is the TOD fix.
-
-If either cannot be determined (no plan, no `plannedAltitude` data, plan is too short), the function returns `null`.
+1. **Primary — name match.** Look for a waypoint with `ident === 'TOC'` (or `'TOD'`). If present, return its position. This is what Simbrief gives us and is the source of truth for the planned profile.
+2. **Fallback — altitude scan.** If no named TOC/TOD waypoint is present (e.g. a custom plan or a flight too short to have one), fall back to the altitude-based scan:
+   - **TOC** — first waypoint whose `plannedAltitude` reaches the cruise altitude (or the highest planned altitude if no `cruiseAltitudeFt` is provided).
+   - **TOD** — last waypoint at cruise altitude before a sustained descent.
+3. **No result.** If neither path yields a position, return `null`.
 
 These positions are computed once per plan load and cached on the `FlightState` payload.
+
+**Plan-renderer note.** Once TOC/TOD are first-class fields, the map can render them with distinct icons (§ below) regardless of whether they're also in `plan.waypoints`. To avoid a double-marker, `PlannedRoute.tsx` filters out `ident === 'TOC' | 'TOD'` from its waypoint list — the dedicated `CruisePoints` layer renders them.
 
 **Type additions.**
 
@@ -88,9 +93,9 @@ eteToTocSec: number | null;   // null when past TOC, no plan, or no GS
 eteToTodSec: number | null;   // null when past TOD, no plan, or no GS
 ```
 
-`eteToTocSec` and `eteToTodSec` are computed in the aggregator as `greatCircleDistance(currentPos, target) / groundSpeed`. The "past" determination uses the breadcrumb: once the aircraft has flown past the perpendicular from TOC/TOD on the planned track, the corresponding ETE returns `null`.
+`eteToTocSec` and `eteToTodSec` are computed in the aggregator as `greatCircleDistance(currentPos, target) / groundSpeed`. Past TOC/TOD the value is still computed (the math is symmetric); consumers that want to suppress display once passed can do so per-component, but the marker itself stays visible (see below).
 
-**Map markers.** Two new layers in the map: `web/src/components/Map/CruisePoints.tsx` renders TOC and TOD markers at their geographic positions. Distinct icons (TOC ↗ chevron, TOD ↘ chevron) so they're visually distinguishable from waypoints. Markers are hidden when the corresponding ETE is `null` (past, or no data).
+**Map markers.** A new layer `web/src/components/Map/CruisePoints.tsx` renders TOC and TOD markers at their geographic positions whenever `tocPosition` / `todPosition` is non-null — markers stay visible for the entire flight (the user wants to see *where* TOC/TOD were even after passing). Distinct icons (TOC ↗ chevron, TOD ↘ chevron) so they're visually distinguishable from regular waypoints. Hidden only when the position itself is `null` (no plan, no detection).
 
 **Clock card countdown rework.** The Clock card (`web/src/components/DataPanel/ClockCard.tsx`) currently estimates TOC from VS and TOD via 3:1. v1.3 swaps both for the new ETE values:
 
@@ -103,7 +108,11 @@ TOD in 47 min  (was: 3:1 rule)
 
 ### 4.3 Skip-waypoint / navigation arrows
 
-**Frontend-only override.** A new field on `useFlightStore` (or a sibling `useNavStore` if the flight store is already busy):
+**Frontend-only override.** Skip-waypoint state lives entirely in the FE store, not on the server. Reasoning: the server's `progress.nextWaypoint` continues to follow auto-selection (distance-based), and our auto-resync clears the override on plan reload — so the override never gets stuck server-side. Keeping it FE-only avoids new WebSocket message types and keeps the protocol additive.
+
+If we later add multi-device consistency requirements (the override syncs across PC + tablet open simultaneously), promoting it to server state is a clean upgrade — the existing `progress.nextWaypoint` becomes the resolved value and a new `progress.manualNextIndex: number | null` joins it. v1.3 ships the FE-only version.
+
+A new field on `useFlightStore` (or a sibling `useNavStore` if the flight store is already busy):
 
 ```ts
 type NavOverride = {
@@ -420,7 +429,7 @@ Per the project pattern: server gets unit tests, frontend is verified manually a
 
 ### Server unit tests
 
-- `route-math/cruise-points.test.ts` — TOC/TOD detection across plain climbs, stepped climbs, no-`plannedAltitude` plans, plans with no cruise altitude, edge cases (TOC at first waypoint, TOD at last waypoint, no TOC because plan stays at FL000).
+- `route-math/cruise-points.test.ts` — TOC/TOD detection by named waypoint (primary path: ident `'TOC'` / `'TOD'`); fallback altitude-scan across plain climbs, stepped climbs, no-`plannedAltitude` plans, plans with no cruise altitude; edge cases (TOC at first waypoint, TOD at last waypoint, no TOC because plan stays at FL000, plan missing both named waypoints and `plannedAltitude` data → returns `null`).
 - `state/aggregator.test.ts` — extend with TOC/TOD ETE computation, `null` past-the-point semantics, breadcrumb-sample altitude inclusion.
 - `simbrief/parser.test.ts` — extend with `blockTimeSec` extraction (and absent-when-missing), and constraint-field extraction iff Spike succeeds.
 
@@ -510,6 +519,7 @@ The full forward roadmap shape, agreed during this brainstorm:
 - AUTO map mode (zoom by flight phase) — depends on the phase classifier.
 - Airport elevation data for FlightPlanCard glyph.
 - Go-arounds / diverted flights handling — fixture-driven via NZQN→NZWN.
+- **Flight-type model (IFR / VFR / etc.).** Architectural pre-work, not a user feature: a `FlightType` enum on `FlightPlan` that gates per-type behavior (which TOC/TOD logic to apply, which time conventions to display, which alts/speeds matter). Worth scoping when we have at least two consumers — e.g. when adding VFR-style flights or when actuals (OUT/OFF/ON/IN) need to differentiate. Likely an internal aggregator concept first, surfaced to the FE only when behavior actually diverges.
 
 ## 14. Open questions during implementation (not blocking spec approval)
 

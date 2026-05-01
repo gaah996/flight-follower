@@ -49,6 +49,7 @@ Theme: flight progress — planned vs actual, with the bug fixes that share its 
 - AUTO map mode (zoom by flight phase) — depends on the phase classifier above.
 - Airport elevation data for FlightPlanCard glyph.
 - Go-arounds / diverted flights handling — fixture-driven via NZQN→NZWN.
+- **Flight-type model (IFR / VFR / etc.).** Architectural pre-work — a `FlightType` enum on `FlightPlan` that gates per-type behavior (TOC/TOD logic, time conventions, relevant alts/speeds). Worth scoping when at least two consumers exist (VFR flights, or actuals OUT/OFF/ON/IN that differ per type).
 
 ## Already shipped — folded into past versions
 
