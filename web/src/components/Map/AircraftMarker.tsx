@@ -9,7 +9,10 @@ export function AircraftMarker() {
   const t = useFlightStore((s) => s.state.telemetry);
   const plan = useFlightStore((s) => s.state.plan);
   if (!t) return null;
-  const heading = t.heading.magnetic;
+  // Map renders in true geographic bearings; the icon rotation must use TRUE
+  // heading. The cockpit-mimicking HDG row in PositionCard / MotionCard keeps
+  // showing magnetic. See docs/notes/altitude-vocabulary.md.
+  const heading = t.heading.true;
   const html = `
     <div class="ff-aircraft" style="width:24px;height:24px;transform:rotate(${heading}deg);transform-origin:center;display:flex;align-items:center;justify-content:center;">
       <svg viewBox="0 0 24 24" width="24" height="24" style="display:block;">
