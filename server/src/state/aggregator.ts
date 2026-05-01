@@ -131,7 +131,7 @@ export class Aggregator extends EventEmitter {
     if (this.state.breadcrumb.length === 0) {
       this.lastBreadcrumbAt = t.timestamp;
       this.lastBreadcrumbHeading = t.heading.magnetic;
-      return [{ lat: t.position.lat, lon: t.position.lon }];
+      return [{ lat: t.position.lat, lon: t.position.lon, altMsl: t.altitude.msl }];
     }
     const elapsed = t.timestamp - this.lastBreadcrumbAt;
     const headingDelta =
@@ -141,7 +141,7 @@ export class Aggregator extends EventEmitter {
     if (elapsed >= BREADCRUMB_INTERVAL_MS || headingDelta >= HEADING_DELTA_DEG) {
       this.lastBreadcrumbAt = t.timestamp;
       this.lastBreadcrumbHeading = t.heading.magnetic;
-      return [...this.state.breadcrumb, { lat: t.position.lat, lon: t.position.lon }];
+      return [...this.state.breadcrumb, { lat: t.position.lat, lon: t.position.lon, altMsl: t.altitude.msl }];
     }
     return this.state.breadcrumb;
   }

@@ -8,7 +8,8 @@ function telem(partial: Partial<RawTelemetry> & Pick<RawTelemetry, 'timestamp' |
     position: partial.position,
     altitude: partial.altitude ?? { msl: 0 },
     speed: partial.speed ?? { ground: 0, indicated: 0, mach: 0 },
-    heading: partial.heading ?? { magnetic: 0 },
+    heading: partial.heading ?? { magnetic: 0, true: 0 },
+    track: partial.track ?? { true: 0 },
     verticalSpeed: partial.verticalSpeed ?? 0,
     wind: partial.wind ?? { direction: 0, speed: 0 },
     onGround: partial.onGround,
@@ -37,6 +38,20 @@ describe('Aggregator basics', () => {
     const a = new Aggregator();
     a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 50, lon: 10 }, onGround: true }));
     expect(a.getState().breadcrumb).toHaveLength(1);
+  });
+
+  it('appends first breadcrumb point with altitude', () => {
+    const a = new Aggregator();
+    a.ingestTelemetry(
+      telem({
+        timestamp: 0,
+        position: { lat: 50, lon: 10 },
+        onGround: true,
+        altitude: { msl: 1234 },
+      }),
+    );
+    const crumb = a.getState().breadcrumb[0];
+    expect(crumb).toEqual({ lat: 50, lon: 10, altMsl: 1234 });
   });
 
   it('does not append a new breadcrumb within 5 s and <2° heading change', () => {
