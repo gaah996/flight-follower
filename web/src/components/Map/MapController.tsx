@@ -26,11 +26,14 @@ export function MapController() {
       if (programmatic.current) return;
       if (mode !== 'manual') setMode('manual');
     },
+    zoomstart: () => {
+      // Any user-initiated zoom (in or out) promotes Overview/Follow → Manual.
+      // Programmatic zoom (fitBounds, panTo) is gated by the same flag the
+      // dragstart handler uses.
+      if (programmatic.current) return;
+      if (mode !== 'manual') setMode('manual');
+    },
     moveend: () => {
-      // Fires after both pan and zoom finish (zoom is a kind of move). We
-      // persist on every moveend, including programmatic ones — any stale
-      // programmatic position gets overwritten the moment the user acts or
-      // telemetry advances after the next reload.
       const c = map.getCenter();
       setLastView([c.lat, c.lng], map.getZoom());
     },
