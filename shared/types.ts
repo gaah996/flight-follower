@@ -3,9 +3,10 @@ export type LatLon = { lat: number; lon: number };
 export type RawTelemetry = {
   timestamp: number;
   position: LatLon;
-  altitude: { msl: number };
+  altitude: { msl: number; indicated?: number };
   speed: { ground: number; indicated: number; mach: number };
-  heading: { magnetic: number };
+  heading: { magnetic: number; true: number };
+  track: { true: number };
   verticalSpeed: number;
   wind: { direction: number; speed: number };
   onGround: boolean;
@@ -17,6 +18,8 @@ export type Waypoint = {
   lat: number;
   lon: number;
   plannedAltitude?: number;
+  altConstraint?: { type: 'at' | 'at-or-above' | 'at-or-below'; ft: number };
+  speedConstraint?: { type: 'at-or-below'; kt: number };
 };
 
 export type Airport = {
@@ -39,6 +42,7 @@ export type FlightPlan = {
   cruiseAltitudeFt?: number;
   totalDistanceNm?: number;
   routeString?: string;
+  blockTimeSec?: number;
 };
 
 export type FlightProgress = {
@@ -48,13 +52,19 @@ export type FlightProgress = {
   distanceToDestNm: number | null;
   eteToDestSec: number | null;
   flightTimeSec: number | null;
+  tocPosition: LatLon | null;
+  todPosition: LatLon | null;
+  eteToTocSec: number | null;
+  eteToTodSec: number | null;
 };
+
+export type BreadcrumbSample = { lat: number; lon: number; altMsl: number };
 
 export type FlightState = {
   connected: boolean;
   telemetry: RawTelemetry | null;
   plan: FlightPlan | null;
-  breadcrumb: LatLon[];
+  breadcrumb: BreadcrumbSample[];
   progress: FlightProgress;
 };
 
