@@ -2,31 +2,80 @@
 
 Items raised during brainstorming sessions that we explicitly chose **not** to do in the current release. Kept here so we can pull them forward later without re-deriving the context.
 
-## From v1.1 brainstorming (2026-04-25)
+## Scheduled in upcoming versions
 
-### Deferred to a later v1.x
+These are not "deferred" — they are scheduled. The structure below was set during the v1.3 brainstorm and is re-checked at the start of each new version's brainstorm.
+
+### v1.3 (in progress)
+
+Spec: [`specs/2026-05-01-flight-follower-v1.3-design.md`](./superpowers/specs/2026-05-01-flight-follower-v1.3-design.md)
+
+Theme: flight progress — planned vs actual, with the bug fixes that share its surfaces.
+
+- Breadcrumb altitude-coded gradient (matching FlightPlanCard glyph palette).
+- Plan-driven TOC/TOD detection + map markers.
+- Skip-waypoint / navigation arrows with auto-resync.
+- Origin → destination progress timeline in TripCard.
+- Live ETA from `eteToDestSec`.
+- Alternate on map (blue) + alternate-only hover tooltip.
+- FlightPlanCard glyph progress reveal (option C, fallback B).
+- Polish & bug fixes: FlightPlanCard collapse/wrap, map mode promotion, altitude SimVar audit, map plane icon true-vs-magnetic fix, TRK row, min-zoom, light-mode tooltip opacity, times-vocabulary alignment + Simbrief block time direct.
+- Spike: Simbrief waypoint constraints availability.
+
+### v1.4 — Personalization & per-user config
+
+- Compact mode for cards.
+- Card config (enable/disable + compact/extended), persisted per user.
+- Switch plane icon color to airline color; airline icon in FlightPlanCard and aircraft tooltip.
+- Theme auto-switch based on aircraft day/night position.
+- Plane icon track-vs-heading toggle (the toggle UI; the v1.3 fix only addresses the rotation reference bug).
+- Move clock closer to TripCard.
+- Waypoint altitude/speed limits in tooltips (if the v1.3 spike defers it).
+- *From v1.2 polish backlog:* cost index / cruise Mach / avg forecast HD-TL on FlightPlanCard; local time at origin/destination; sunrise/sunset at destination; wind compass refinements (proportional arrow, HD/TL color cue, instrument-glass feel); parking-brake indicator.
+- Clock fallback to real time after a sim-disconnect grace period.
+- Actuals: compute OUT/OFF/ON/IN from the on-ground boolean.
+
+### v1.5 — Multi-device / Responsive
+
+- Mobile-friendly layout.
+- Alert center (replaces inline alerts).
+- LAN IP shown on startup banner / settings panel.
+- Header treatment for app-mode (kiosk / Electron-ready).
+
+### v1.6+ — Platform & data expansion
+
+- *From v1.1 backlog:* layers panel, unit switching, map style switcher, flight phase classifier, live METAR per airport, live position of other aircraft, FE-controlled replay module.
+- *From v1 roadmap:* flight logging, 3D / Cesium view, FBW A320 FMC reading, Electron packaging.
+- AUTO map mode (zoom by flight phase) — depends on the phase classifier above.
+- Airport elevation data for FlightPlanCard glyph.
+- Go-arounds / diverted flights handling — fixture-driven via NZQN→NZWN.
+
+## Already shipped — folded into past versions
+
+For traceability — these were on the backlog and have since shipped:
+
+- **v1.2** ✅ — component library + dark mode, DataPanel layout / grouping (Trip / Now / Reference), wind compass widget, default map tile style refinement, flight-plan card, multi-tier position precision.
+
+## v1.1 brainstorming — context preserved
+
+These items originated in the v1.1 brainstorm. Current scheduling above; original context kept for traceability.
+
+### Deferred to a later v1.x (now scheduled in v1.6+)
 
 - **Layers panel** — toggle path / waypoints / labels visibility on the map.
 - **Unit switching** — speed in km/h, altitude/distance in metres or kilometres, with toggle or auto-switch.
 - **Map style switcher** — full UI to swap tile providers at runtime (v1.2 only refines the default style; the switcher itself is parked).
 - **Estimate flight phase** — TO / CLB / CRZ / DES / LAND classifier. Likely rule-based on altitude, vertical speed, on-ground, distance-to-airports.
 
-### Parked as v2 candidates
+### Parked as v2 candidates (now v1.6+)
 
 - **Live METAR per airport** — fetch and surface METAR for origin / destination / alternate.
 - **Live position of other aircraft** — would require an external feed (ADSB / FlightAware / OpenSky); MSFS does not expose multiplayer cleanly.
-- **Replay module (FE-controlled)** — turn the dev replay harness into a first-class user feature: load a recording in the browser, play / pause / scrub forwards and backwards, jump to a timestamp. Requires aggregator + breadcrumb reset on backward seek and a control surface (REST or WS commands) so the FE drives the replay. v1.1 only ships a simple forward-skip env var (`REPLAY_START_MS`) for dev ergonomics; the full module is a v2 / v3 candidate.
+- **Replay module (FE-controlled)** — turn the dev replay harness into a first-class user feature: load a recording in the browser, play / pause / scrub forwards and backwards, jump to a timestamp. Requires aggregator + breadcrumb reset on backward seek and a control surface (REST or WS commands) so the FE drives the replay. v1.1 only ships a simple forward-skip env var (`REPLAY_START_MS`) for dev ergonomics; the full module is a v1.6+ candidate.
 
-## From v1.1 brainstorming — folded into later v1.x versions
+## v1.2 polish — context preserved
 
-For traceability — these are not "deferred", they are scheduled:
-
-- **v1.2** ✅ shipped — component library + dark mode, DataPanel layout / grouping (Trip / Now / Reference), wind compass widget, default map tile style refinement, flight-plan card, multi-tier position precision.
-- **v1.3** — breadcrumb altitude-coded gradient (with matching colours on the FlightPlanCard altitude-profile glyph), skip-waypoint mechanism, TOC / TOD markers on the map, origin → destination progress timeline bar, live ETA derived from `eteToDestSec`.
-
-## From v1.2 polish (2026-04-26)
-
-Items that came up during the card-by-card iteration but were intentionally not pursued in v1.2.
+Items that came up during the card-by-card iteration but were intentionally not pursued in v1.2. All scheduled in v1.4 above.
 
 ### Card-level data additions
 
@@ -36,7 +85,7 @@ Items that came up during the card-by-card iteration but were intentionally not 
 
 ### Clock card
 
-- **Plan-driven TOC / TOD detection** — current logic uses VS-based estimation for TOC and the 3:1 rule for TOD. A waypoint-scan against `plannedAltitude` would be more accurate (and fold naturally into the v1.3 TOC / TOD map markers).
+- **Plan-driven TOC / TOD detection** — current logic uses VS-based estimation for TOC and the 3:1 rule for TOD. **Now in v1.3** (see scheduled section above).
 - **Local time at origin / destination** — tz-from-coordinate lookup; useful on long-haul.
 - **Sunrise / sunset at destination** — easy follow-up to the existing `isDaylight` calc.
 
