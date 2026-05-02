@@ -149,6 +149,26 @@ describe('Aggregator progress', () => {
     const s = a.getState();
     expect(s.progress.eteToDestSec).toBeGreaterThan(0);
   });
+
+  it('auto-resumes passedIndex from current position on plan reload', () => {
+    // Simulates re-fetching the Simbrief plan mid-flight. The aircraft is
+    // positioned between W1 and W2; loading the plan should seed the cursor
+    // there rather than snapping back to the first waypoint. Without
+    // auto-resume, advancePassedIndex (threshold 2 nm) can only catch the
+    // aircraft as it passes within close range of each waypoint — useless
+    // for re-fetches that happen mid-leg.
+    const a = new Aggregator();
+    a.ingestTelemetry(
+      telem({
+        timestamp: 0,
+        position: { lat: 0, lon: 3.6 }, // past W1 (lon 2), before W2 (lon 5)
+        onGround: false,
+        speed: { ground: 200, indicated: 200, mach: 0.3 },
+      }),
+    );
+    a.setPlan(PLAN);
+    expect(a.getState().progress.nextWaypoint?.ident).toBe('W2');
+  });
 });
 
 describe('Aggregator near-(0,0) filter', () => {

@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import type { FlightPlan, FlightProgress, FlightState, RawTelemetry } from '@ff/shared';
 import { haversineNm } from '../route-math/distance.js';
-import { advancePassedIndex, distanceToWaypointNm, eteSeconds } from '../route-math/progress.js';
+import { advancePassedIndex, distanceToWaypointNm, eteSeconds, findPassedIndex } from '../route-math/progress.js';
 import { findTOC, findTOD } from '../route-math/cruise-points.js';
 
 const BREADCRUMB_INTERVAL_MS = 5000;
@@ -42,7 +42,12 @@ export class Aggregator extends EventEmitter {
   }
 
   setPlan(plan: FlightPlan): void {
-    this.passedIndex = -1;
+    // Auto-resume on plan reload: seed passedIndex from the aircraft's
+    // current position so re-fetching mid-flight doesn't snap tracking back
+    // to the first waypoint. With no telemetry yet, start fresh at -1.
+    this.passedIndex = this.state.telemetry
+      ? findPassedIndex(this.state.telemetry.position, plan.waypoints)
+      : -1;
     this.state = { ...this.state, plan, progress: this.computeProgress(this.state.telemetry, plan) };
     this.emit('state', this.state);
     this.emit('plan', plan);

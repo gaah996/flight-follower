@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { eteSeconds, distanceToWaypointNm, advancePassedIndex } from './progress.js';
+import { eteSeconds, distanceToWaypointNm, advancePassedIndex, findPassedIndex } from './progress.js';
 
 const wpts = [
   { ident: 'A', lat: 0, lon: 0 },
@@ -49,5 +49,31 @@ describe('advancePassedIndex', () => {
   it('stops at the last waypoint', () => {
     const next = advancePassedIndex({ lat: 0, lon: 2.001 }, wpts, 1, 2);
     expect(next).toBe(2);
+  });
+});
+
+describe('findPassedIndex', () => {
+  it('returns -1 when the aircraft is still approaching the first waypoint', () => {
+    // Aircraft south of A; closer to A than to B.
+    expect(findPassedIndex({ lat: -1, lon: 0 }, wpts)).toBe(-1);
+  });
+
+  it('returns 0 when the aircraft is between the first and second waypoints', () => {
+    // Aircraft at lon 0.6 on the equator: closer to B (lon 1) than to A (lon 0)
+    // and closer to B than to C (lon 2).
+    expect(findPassedIndex({ lat: 0, lon: 0.6 }, wpts)).toBe(0);
+  });
+
+  it('returns the last index when the aircraft is past the final waypoint', () => {
+    // Aircraft at lon 3: closer to C (lon 2) than to B (lon 1).
+    expect(findPassedIndex({ lat: 0, lon: 3 }, wpts)).toBe(1);
+  });
+
+  it('returns -1 for empty waypoint list', () => {
+    expect(findPassedIndex({ lat: 0, lon: 0 }, [])).toBe(-1);
+  });
+
+  it('returns -1 for a single waypoint', () => {
+    expect(findPassedIndex({ lat: 0, lon: 0 }, [wpts[0]!])).toBe(-1);
   });
 });

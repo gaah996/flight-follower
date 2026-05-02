@@ -33,3 +33,23 @@ export function advancePassedIndex(
   }
   return idx;
 }
+
+/**
+ * Estimate which waypoint has been most recently passed based purely on
+ * current position. Used to seed the passedIndex cursor when a plan is
+ * loaded mid-flight (e.g. after re-fetching from Simbrief) so tracking
+ * doesn't snap back to the first waypoint.
+ *
+ * Heuristic: the largest index N for which the aircraft is closer to
+ * waypoint N+1 than to waypoint N. Returns -1 when the aircraft is still
+ * approaching the first waypoint, or for empty plans.
+ */
+export function findPassedIndex(pos: LatLon, waypoints: Waypoint[]): number {
+  let passed = -1;
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    const distHere = distanceToWaypointNm(pos, waypoints[i]!);
+    const distNext = distanceToWaypointNm(pos, waypoints[i + 1]!);
+    if (distNext < distHere) passed = i;
+  }
+  return passed;
+}
