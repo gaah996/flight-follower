@@ -49,6 +49,11 @@ export type FlightProgress = {
   nextWaypoint: Waypoint | null;
   distanceToNextNm: number | null;
   eteToNextSec: number | null;
+  /**
+   * Route-following distance to destination in nautical miles: along-track
+   * remainder of the current leg + sum of remaining leg distances.
+   * Replaced great-circle semantics in v1.3.1.
+   */
   distanceToDestNm: number | null;
   eteToDestSec: number | null;
   flightTimeSec: number | null;
