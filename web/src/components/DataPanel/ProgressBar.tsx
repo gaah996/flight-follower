@@ -34,8 +34,12 @@ function CruiseTick({ pct, label }: { pct: number; label: string }) {
       className="absolute"
       style={{
         left: `${pct * 100}%`,
-        top: '50%',
-        transform: 'translate(-50%, -50%)',
+        // Bar is 10 px tall (h-2.5 + 1 px border each side); 16 px tick
+        // centred = 3 px overhang on each side. Use a fixed pixel offset
+        // instead of top:50% + translateY because HeroUI's Tooltip wrapping
+        // breaks the percentage / transform chain.
+        top: -3,
+        transform: 'translateX(-50%)',
         width: TICK_WIDTH,
         height: TICK_HEIGHT,
       }}
