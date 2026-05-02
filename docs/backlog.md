@@ -6,22 +6,6 @@ Items raised during brainstorming sessions that we explicitly chose **not** to d
 
 These are not "deferred" — they are scheduled. The structure below was set during the v1.3 brainstorm and is re-checked at the start of each new version's brainstorm.
 
-### v1.3 (in progress)
-
-Spec: [`specs/2026-05-01-flight-follower-v1.3-design.md`](./superpowers/specs/2026-05-01-flight-follower-v1.3-design.md)
-
-Theme: flight progress — planned vs actual, with the bug fixes that share its surfaces.
-
-- Breadcrumb altitude-coded gradient (matching FlightPlanCard glyph palette).
-- Plan-driven TOC/TOD detection + map markers.
-- Skip-waypoint / navigation arrows with auto-resync.
-- Origin → destination progress timeline in TripCard.
-- Live ETA from `eteToDestSec`.
-- Alternate on map (blue) + alternate-only hover tooltip.
-- FlightPlanCard glyph progress reveal (option C, fallback B).
-- Polish & bug fixes: FlightPlanCard collapse/wrap, map mode promotion, altitude SimVar audit, map plane icon true-vs-magnetic fix, TRK row, min-zoom, light-mode tooltip opacity, times-vocabulary alignment + Simbrief block time direct.
-- Spike: Simbrief waypoint constraints availability.
-
 ### v1.4 — Personalization & per-user config
 
 - Compact mode for cards.
@@ -55,6 +39,7 @@ Theme: flight progress — planned vs actual, with the bug fixes that share its 
 
 For traceability — these were on the backlog and have since shipped:
 
+- **v1.3** ✅ — flight progress release. Breadcrumb altitude gradient (variable-bucket sizing), plan-driven TOC/TOD markers and ETE countdowns, skip-waypoint arrows + along-track auto-resume on plan reload, origin → destination progress timeline, live ETA, alternate-on-map (blue, hover-only tooltip), FlightPlanCard glyph reveal-as-you-fly. Polish: FlightPlanCard collapse/wrap, map mode promotion (zoom-out of Overview, click-self no-op), true-vs-magnetic plane-icon rotation, magnetic TRK in PositionCard, indicated-altitude in MotionCard, light-mode tooltip, times-vocabulary alignment (block now `sched_block`). Spike outcome: NOT CLEAN — waypoint constraints not exposed cleanly in Simbrief; deferred to v1.4. See [`docs/notes/spike-waypoint-constraints.md`](./notes/spike-waypoint-constraints.md).
 - **v1.2** ✅ — component library + dark mode, DataPanel layout / grouping (Trip / Now / Reference), wind compass widget, default map tile style refinement, flight-plan card, multi-tier position precision.
 
 ## v1.1 brainstorming — context preserved

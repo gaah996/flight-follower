@@ -7,9 +7,13 @@ Built for personal use while flying the FlyByWire A32NX, but works with any airc
 ## Features
 
 - Live aircraft position, altitude, speeds (GS / IAS / Mach), heading, vertical speed, and wind, refreshed at 2 Hz.
-- Breadcrumb trail of the actual flight path.
+- Magnetic ground track (TRK) on the Position card, available via the HDG disclosure.
+- Breadcrumb trail of the actual flight path, color-coded by altitude — sharing the FlightPlanCard altitude-profile palette so plan and actual use the same visual vocabulary.
 - Simbrief flight plan import on demand — origin, waypoints, destination, alternate. Re-fetch any time from Settings or from the panel CTA when no plan is loaded.
-- Side panel grouped into **Trip / Now / Reference** sections: Trip (origin → destination, ETE, ETA), Now (Position / Motion / Wind cards with HD/TL component, on-ground gear indicator, multi-tier altitude+VS), Reference (flight-plan card with altitude profile glyph + alternate chip, clock card with TOC/TOD countdown and day-night glyph at the aircraft sub-point).
+- Plan-driven TOC / TOD markers on the map and ETE countdowns in the Clock card, with graceful fallback to a VS / 3:1 estimator when no plan is loaded.
+- Skip-waypoint arrows (◀ ▶) on the FlightPlanCard for manual stepping; auto-resyncs on plan reload via along-track projection so re-fetching mid-flight no longer snaps tracking back to the first waypoint.
+- Alternate airport rendered in blue with a hover-only tooltip; origin and destination keep their fixed labels.
+- Side panel grouped into **Trip / Now / Reference** sections: Trip (origin → destination, with a TOC / current / TOD progress timeline, scheduled STA in the header, and a live ETA derived from `eteToDestSec` that falls back to a dash when unavailable), Now (Position / Motion / Wind cards with HD/TL component, on-ground gear indicator, multi-tier altitude+VS), Reference (flight-plan card with altitude profile glyph + alternate chip, clock card with TOC/TOD countdown and day-night glyph at the aircraft sub-point).
 - Map polish: softer origin/destination markers, frosted-glass tooltips, panel-aware centering — auto-fit and follow modes both compensate for the side-panel overlay.
 - Three map view modes: Overview (fit to origin → destination), Follow (auto-center on aircraft), Manual (sticky after dragging).
 - Scoped reset from Settings — clear aircraft data (breadcrumb + flight time), the loaded flight plan, or both — without restarting the server.
@@ -166,7 +170,7 @@ Things explicitly **not** shipped yet, but the architecture leaves room for them
 - **FBW A320 FMC reading** — capture the actual loaded FMC route as the planned line, instead of relying on Simbrief.
 - **Electron packaging** — `start({…})` already takes paths as input and `node-simconnect` is pure-TS, so wrapping is straightforward.
 
-Smaller deferrals (UI polish, data additions, plan-driven TOC/TOD detection, etc.) live in [`docs/backlog.md`](./docs/backlog.md).
+Smaller deferrals live in [`docs/backlog.md`](./docs/backlog.md).
 
 ## Documents
 
@@ -174,6 +178,7 @@ Smaller deferrals (UI polish, data additions, plan-driven TOC/TOD detection, etc
 - [v1 implementation plan](./docs/superpowers/plans/2026-04-24-flight-follower.md) — the task-by-task plan that built v1
 - [v1.1 design](./docs/superpowers/specs/2026-04-25-flight-follower-v1.1-design.md) and [v1.1 plan](./docs/superpowers/plans/2026-04-25-flight-follower-v1.1.md)
 - [v1.2 design](./docs/superpowers/specs/2026-04-25-flight-follower-v1.2-design.md) and [v1.2 plan](./docs/superpowers/plans/2026-04-25-flight-follower-v1.2.md)
+- [v1.3 design](./docs/superpowers/specs/2026-05-01-flight-follower-v1.3-design.md) and [v1.3 plan](./docs/superpowers/plans/2026-05-01-flight-follower-v1.3.md)
 - [Backlog](./docs/backlog.md) — items deferred during brainstorming
 
 ## License

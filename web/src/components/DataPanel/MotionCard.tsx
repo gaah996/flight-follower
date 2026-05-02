@@ -120,10 +120,13 @@ export function MotionCard() {
 
         <Separator className="my-3" />
 
-        <Row label="Alt">
+        <Row
+          label="Alt"
+          tooltip="Indicated altitude (mirrors cockpit altimeter); falls back to MSL when indicated is unavailable"
+        >
           {t ? (
             <span className="inline-flex items-center gap-2">
-              <span>{fmtNum(t.altitude.msl, 0)} ft</span>
+              <span>{fmtNum(t.altitude.indicated ?? t.altitude.msl, 0)} ft</span>
               <span className="minor">
                 {t.verticalSpeed > 0 ? "↑" : t.verticalSpeed < 0 ? "↓" : ""}
                 {fmtNum(Math.abs(t.verticalSpeed), 0)} fpm

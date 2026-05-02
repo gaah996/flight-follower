@@ -8,7 +8,8 @@ function telem(partial: Partial<RawTelemetry> & Pick<RawTelemetry, 'timestamp' |
     position: partial.position,
     altitude: partial.altitude ?? { msl: 0 },
     speed: partial.speed ?? { ground: 0, indicated: 0, mach: 0 },
-    heading: partial.heading ?? { magnetic: 0 },
+    heading: partial.heading ?? { magnetic: 0, true: 0 },
+    track: partial.track ?? { magnetic: 0 },
     verticalSpeed: partial.verticalSpeed ?? 0,
     wind: partial.wind ?? { direction: 0, speed: 0 },
     onGround: partial.onGround,
@@ -39,10 +40,24 @@ describe('Aggregator basics', () => {
     expect(a.getState().breadcrumb).toHaveLength(1);
   });
 
+  it('appends first breadcrumb point with altitude', () => {
+    const a = new Aggregator();
+    a.ingestTelemetry(
+      telem({
+        timestamp: 0,
+        position: { lat: 50, lon: 10 },
+        onGround: true,
+        altitude: { msl: 1234 },
+      }),
+    );
+    const crumb = a.getState().breadcrumb[0];
+    expect(crumb).toEqual({ lat: 50, lon: 10, altMsl: 1234 });
+  });
+
   it('does not append a new breadcrumb within 5 s and <2° heading change', () => {
     const a = new Aggregator();
-    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 50, lon: 10 }, onGround: true, heading: { magnetic: 0 } }));
-    a.ingestTelemetry(telem({ timestamp: 1000, position: { lat: 50, lon: 10.001 }, onGround: true, heading: { magnetic: 1 } }));
+    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 50, lon: 10 }, onGround: true, heading: { magnetic: 0, true: 0 } }));
+    a.ingestTelemetry(telem({ timestamp: 1000, position: { lat: 50, lon: 10.001 }, onGround: true, heading: { magnetic: 1, true: 1 } }));
     expect(a.getState().breadcrumb).toHaveLength(1);
   });
 
@@ -55,8 +70,8 @@ describe('Aggregator basics', () => {
 
   it('appends on >2° heading change even within 5 s', () => {
     const a = new Aggregator();
-    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 50, lon: 10 }, onGround: true, heading: { magnetic: 0 } }));
-    a.ingestTelemetry(telem({ timestamp: 1000, position: { lat: 50, lon: 10.001 }, onGround: true, heading: { magnetic: 10 } }));
+    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 50, lon: 10 }, onGround: true, heading: { magnetic: 0, true: 0 } }));
+    a.ingestTelemetry(telem({ timestamp: 1000, position: { lat: 50, lon: 10.001 }, onGround: true, heading: { magnetic: 10, true: 10 } }));
     expect(a.getState().breadcrumb).toHaveLength(2);
   });
 
@@ -133,6 +148,55 @@ describe('Aggregator progress', () => {
     a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 50, lon: 10 }, onGround: false, speed: { ground: 600, indicated: 600, mach: 0.9 } }));
     const s = a.getState();
     expect(s.progress.eteToDestSec).toBeGreaterThan(0);
+  });
+
+  it('advances passedIndex via along-track when off-track wider than the close-pass threshold', () => {
+    // Aircraft 10 nm north of the route (~0.16°) at lon 5.5 — well past
+    // W2 along-track but never within 2 nm of any waypoint, so the
+    // close-pass advancer alone would leave the cursor stuck.
+    const a = new Aggregator();
+    a.setPlan(PLAN);
+    // Seed with an on-route ingest at W1 so the cursor starts at 0.
+    a.ingestTelemetry(
+      telem({
+        timestamp: 0,
+        position: { lat: 0, lon: 2.001 },
+        onGround: false,
+        speed: { ground: 200, indicated: 200, mach: 0.3 },
+      }),
+    );
+    expect(a.getState().progress.nextWaypoint?.ident).toBe('W2');
+
+    // Now drift north, past W2 along-track but ~10 nm wide of the leg.
+    a.ingestTelemetry(
+      telem({
+        timestamp: 60_000,
+        position: { lat: 0.166, lon: 5.5 },
+        onGround: false,
+        speed: { ground: 200, indicated: 200, mach: 0.3 },
+      }),
+    );
+    expect(a.getState().progress.nextWaypoint?.ident).toBe('W3');
+  });
+
+  it('auto-resumes passedIndex from current position on plan reload', () => {
+    // Simulates re-fetching the Simbrief plan mid-flight. The aircraft is
+    // positioned between W1 and W2; loading the plan should seed the cursor
+    // there rather than snapping back to the first waypoint. Without
+    // auto-resume, advancePassedIndex (threshold 2 nm) can only catch the
+    // aircraft as it passes within close range of each waypoint — useless
+    // for re-fetches that happen mid-leg.
+    const a = new Aggregator();
+    a.ingestTelemetry(
+      telem({
+        timestamp: 0,
+        position: { lat: 0, lon: 3.6 }, // past W1 (lon 2), before W2 (lon 5)
+        onGround: false,
+        speed: { ground: 200, indicated: 200, mach: 0.3 },
+      }),
+    );
+    a.setPlan(PLAN);
+    expect(a.getState().progress.nextWaypoint?.ident).toBe('W2');
   });
 });
 
@@ -293,5 +357,105 @@ describe('Aggregator resetAll', () => {
     a.resetAll();
     expect(stateCount).toBe(1);
     expect(planCount).toBe(0);
+  });
+});
+
+describe('Aggregator TOC/TOD', () => {
+  const PLAN_WITH_NAMED: FlightPlan = {
+    fetchedAt: 0,
+    origin: { icao: 'AAAA', lat: 0, lon: 0 },
+    destination: { icao: 'BBBB', lat: 0, lon: 10 },
+    waypoints: [
+      { ident: 'W1', lat: 0, lon: 1, plannedAltitude: 10000 },
+      { ident: 'TOC', lat: 0, lon: 2, plannedAltitude: 36000 },
+      { ident: 'W2', lat: 0, lon: 5, plannedAltitude: 36000 },
+      { ident: 'TOD', lat: 0, lon: 8, plannedAltitude: 36000 },
+      { ident: 'W3', lat: 0, lon: 9, plannedAltitude: 10000 },
+    ],
+    cruiseAltitudeFt: 36000,
+  };
+
+  it('exposes tocPosition and todPosition once a plan loads', () => {
+    const a = new Aggregator();
+    a.setPlan(PLAN_WITH_NAMED);
+    const s = a.getState();
+    expect(s.progress.tocPosition).toEqual({ lat: 0, lon: 2 });
+    expect(s.progress.todPosition).toEqual({ lat: 0, lon: 8 });
+  });
+
+  it('computes eteToTocSec from current GS and distance to TOC', () => {
+    const a = new Aggregator();
+    a.setPlan(PLAN_WITH_NAMED);
+    // Sit just outside the (0,0) MSFS pre-spawn filter so the frame is
+    // accepted; position still well short of TOC at lon: 2.
+    a.ingestTelemetry(
+      telem({
+        timestamp: 0,
+        position: { lat: 1.001, lon: 0 },
+        onGround: false,
+        speed: { ground: 60, indicated: 60, mach: 0.1 },
+      }),
+    );
+    const s = a.getState();
+    expect(s.progress.eteToTocSec).not.toBeNull();
+    expect(s.progress.eteToTocSec!).toBeGreaterThan(0);
+  });
+
+  it('returns null tocPosition / todPosition when no plan is loaded', () => {
+    const a = new Aggregator();
+    a.ingestTelemetry(telem({ timestamp: 0, position: { lat: 0, lon: 0 }, onGround: false }));
+    const s = a.getState();
+    expect(s.progress.tocPosition).toBeNull();
+    expect(s.progress.todPosition).toBeNull();
+    expect(s.progress.eteToTocSec).toBeNull();
+    expect(s.progress.eteToTodSec).toBeNull();
+  });
+
+  it('clears TOC/TOD on resetPlan', () => {
+    const a = new Aggregator();
+    a.setPlan(PLAN_WITH_NAMED);
+    a.resetPlan();
+    expect(a.getState().progress.tocPosition).toBeNull();
+    expect(a.getState().progress.todPosition).toBeNull();
+  });
+
+  it('null eteToTocSec once aircraft is past TOC, but tocPosition stays', () => {
+    const a = new Aggregator();
+    a.setPlan(PLAN_WITH_NAMED);
+    // Aircraft at lon 4: past TOC (lon 2) but before TOD (lon 8).
+    a.ingestTelemetry(
+      telem({
+        timestamp: 0,
+        position: { lat: 0, lon: 4 },
+        onGround: false,
+        speed: { ground: 200, indicated: 200, mach: 0.3 },
+      }),
+    );
+    const s = a.getState();
+    expect(s.progress.eteToTocSec).toBeNull();
+    expect(s.progress.tocPosition).toEqual({ lat: 0, lon: 2 });
+    // TOD still ahead at lon 8 → eteToTodSec should still compute.
+    expect(s.progress.eteToTodSec).not.toBeNull();
+    expect(s.progress.eteToTodSec!).toBeGreaterThan(0);
+  });
+
+  it('null eteToTodSec once aircraft is past TOD as well', () => {
+    const a = new Aggregator();
+    a.setPlan(PLAN_WITH_NAMED);
+    // Aircraft at lon 9: past both TOC and TOD.
+    a.ingestTelemetry(
+      telem({
+        timestamp: 0,
+        position: { lat: 0, lon: 9 },
+        onGround: false,
+        speed: { ground: 200, indicated: 200, mach: 0.3 },
+      }),
+    );
+    const s = a.getState();
+    expect(s.progress.eteToTocSec).toBeNull();
+    expect(s.progress.eteToTodSec).toBeNull();
+    // Markers stay visible.
+    expect(s.progress.tocPosition).not.toBeNull();
+    expect(s.progress.todPosition).not.toBeNull();
   });
 });

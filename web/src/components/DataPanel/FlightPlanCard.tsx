@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from '@heroui/react';
 import { useFlightStore } from '../../store/flight.js';
+import { altitudeToColor } from '../../lib/altitudePalette.js';
 import { dash, fmtDurationTier, fmtUtcTime } from './fmt.js';
 import { Row } from './Row.js';
 
@@ -29,7 +30,7 @@ function haversineNm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 // cumulative great-circle distance. Step climbs and shallow climb/descent
 // gradients show up naturally. Falls back to a generic trapezoid when the
 // plan has no per-waypoint altitudes to work with.
-function AltitudeProfileGlyph({ plan }: { plan: FlightPlan }) {
+function AltitudeProfileGlyph({ plan, progress }: { plan: FlightPlan; progress: number }) {
   const W = 36;
   const H = 14;
   const PAD = 1;
@@ -66,6 +67,26 @@ function AltitudeProfileGlyph({ plan }: { plan: FlightPlan }) {
     polylinePoints = `${PAD},${H - PAD} 6,3 ${W - 6},3 ${W - PAD},${H - PAD}`;
   }
 
+  // Compute gradient stops from the profile so the polyline stroke matches
+  // the breadcrumb's altitude palette. Uses userSpaceOnUse coordinates so
+  // stop offsets are in viewBox x-units (PAD .. W-PAD), mapping each point's
+  // distance directly to its position on the gradient line. Falls back to a
+  // single-color stroke when there's no altitude data (generic trapezoid).
+  const gradientId = `ff-glyph-grad-${plan.fetchedAt}`;
+  const useGradient = profile.length >= 2 && maxDist > 0 && maxAlt > 0;
+  const stops = useGradient
+    ? profile.map(([d, a]) => ({
+        offset: (d / maxDist) * 100,
+        color: altitudeToColor(a),
+      }))
+    : [];
+
+  // Reveal-as-you-fly: render the gradient stroke clipped to the flown
+  // portion and a faint muted underlay across the full path. The unflown
+  // side reads as "yet to come" without a darkened overlay box.
+  const flownX = PAD + Math.max(0, Math.min(1, progress)) * (W - 2 * PAD);
+  const clipId = `ff-glyph-clip-${plan.fetchedAt}`;
+
   return (
     <svg
       width={W}
@@ -74,13 +95,45 @@ function AltitudeProfileGlyph({ plan }: { plan: FlightPlan }) {
       aria-hidden
       style={{ color: 'var(--ff-fg-muted)' }}
     >
+      <defs>
+        {useGradient && (
+          <linearGradient
+            id={gradientId}
+            gradientUnits="userSpaceOnUse"
+            x1={PAD}
+            y1={0}
+            x2={W - PAD}
+            y2={0}
+          >
+            {stops.map((s, i) => (
+              <stop key={i} offset={`${s.offset}%`} stopColor={s.color} />
+            ))}
+          </linearGradient>
+        )}
+        <clipPath id={clipId}>
+          <rect x={0} y={0} width={flownX} height={H} />
+        </clipPath>
+      </defs>
+      {/* Unflown underlay — full path, faint muted gray. */}
       <polyline
         points={polylinePoints}
         fill="none"
         stroke="currentColor"
+        strokeOpacity={0.3}
         strokeWidth={1}
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+      {/* Flown overlay — gradient (or solid currentColor for generic trapezoid),
+          clipped to the flown rect. */}
+      <polyline
+        points={polylinePoints}
+        fill="none"
+        stroke={useGradient ? `url(#${gradientId})` : 'currentColor'}
+        strokeWidth={1}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        clipPath={`url(#${clipId})`}
       />
     </svg>
   );
@@ -95,7 +148,13 @@ function fmtFL(ft: number | undefined): string {
 
 export function FlightPlanCard() {
   const plan = useFlightStore((s) => s.state.plan);
+  const distToDest = useFlightStore((s) => s.state.progress.distanceToDestNm);
   const [expanded, setExpanded] = useState(false);
+
+  const progressPct =
+    plan?.totalDistanceNm != null && distToDest != null
+      ? Math.max(0, Math.min(1, 1 - distToDest / plan.totalDistanceNm))
+      : 0;
 
   if (!plan) {
     return (
@@ -118,17 +177,21 @@ export function FlightPlanCard() {
       : plan.flightNumber
     : plan.aircraftType ?? dash;
 
+  // Block time comes directly from Simbrief (plan.blockTimeSec — est_block
+  // preferred, sched_block fallback). Falls back to STA-derivation only if
+  // the OFP didn't include either, for back-compat with older fixtures.
   const blockTimeSec =
-    plan.scheduledOut != null && plan.scheduledIn != null
+    plan.blockTimeSec ??
+    (plan.scheduledOut != null && plan.scheduledIn != null
       ? Math.max(0, Math.floor((plan.scheduledIn - plan.scheduledOut) / 1000))
-      : null;
+      : null);
 
   return (
     <Card variant="default">
       <Card.Header>
         <div className="flex items-center justify-between">
           <Card.Title>Flight plan</Card.Title>
-          <AltitudeProfileGlyph plan={plan} />
+          <AltitudeProfileGlyph plan={plan} progress={progressPct} />
         </div>
         <div className="flex items-center gap-2">
           <Card.Description>{callsign}</Card.Description>
@@ -167,12 +230,18 @@ export function FlightPlanCard() {
             onClick={() => setExpanded((v) => !v)}
             title={expanded ? 'Click to collapse' : 'Click to expand'}
             className={`rounded-lg py-1 px-2 ml-[-8px] mr-[-8px] text-xs cursor-pointer ${
-              expanded ? '' : 'line-clamp-2'
+              expanded ? '' : 'line-clamp-2 max-h-[2.5rem] overflow-hidden'
             }`}
             style={{
               fontFamily: 'ui-monospace, monospace',
               color: 'var(--ff-fg-muted)',
-              wordBreak: expanded ? 'break-all' : undefined,
+              // Wrap at whitespace only; never break a fix name in the middle
+              // (e.g. RUDAP must never render as RUD-AP). The route string is
+              // already space-delimited, so this just lets the browser pick
+              // line breaks at the existing spaces.
+              wordBreak: 'keep-all',
+              overflowWrap: 'normal',
+              whiteSpace: 'normal',
             }}
           >
             {plan.routeString}

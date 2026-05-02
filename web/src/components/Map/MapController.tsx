@@ -26,11 +26,15 @@ export function MapController() {
       if (programmatic.current) return;
       if (mode !== 'manual') setMode('manual');
     },
+    zoomstart: () => {
+      // User-initiated zoom demotes Overview → Manual (Overview's auto-fit
+      // would otherwise immediately revert the zoom). Follow keeps Follow:
+      // zooming while following is a useful "see more around me" gesture
+      // and the auto-pan should keep tracking the aircraft.
+      if (programmatic.current) return;
+      if (mode === 'overview') setMode('manual');
+    },
     moveend: () => {
-      // Fires after both pan and zoom finish (zoom is a kind of move). We
-      // persist on every moveend, including programmatic ones — any stale
-      // programmatic position gets overwritten the moment the user acts or
-      // telemetry advances after the next reload.
       const c = map.getCenter();
       setLastView([c.lat, c.lng], map.getZoom());
     },

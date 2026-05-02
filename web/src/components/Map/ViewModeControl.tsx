@@ -19,7 +19,9 @@ export function ViewModeControl() {
         selectedKeys={new Set([mode])}
         onSelectionChange={(keys) => {
           const selected = Array.from(keys as Set<string>)[0];
-          if (selected) setMode(selected as ViewMode);
+          // Clicking the already-active mode is a no-op; otherwise the
+          // re-selection fires Overview's auto-fit again, re-panning the map.
+          if (selected && selected !== mode) setMode(selected as ViewMode);
         }}
         className="rounded-full"
         style={{

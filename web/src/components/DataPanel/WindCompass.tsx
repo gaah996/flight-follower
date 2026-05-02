@@ -15,7 +15,11 @@ const PLANE_SCALE = 0.7;
 export function WindCompass() {
   const t = useFlightStore((s) => s.state.telemetry);
   const dir = t?.wind.direction ?? null;
-  const heading = t?.heading.magnetic ?? null;
+  // Wind direction from the sim is in degrees TRUE; rotate the aircraft
+  // silhouette by true heading so both share the same reference frame and
+  // match the map's plane icon. The cockpit-style HDG row in PositionCard
+  // continues to display magnetic.
+  const heading = t?.heading.true ?? null;
 
   const cardinals: Array<{ label: string; angle: number }> = [
     { label: 'N', angle: 0 },

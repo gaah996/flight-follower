@@ -1,7 +1,8 @@
 import { EventEmitter } from 'node:events';
 import type { FlightPlan, FlightProgress, FlightState, RawTelemetry } from '@ff/shared';
 import { haversineNm } from '../route-math/distance.js';
-import { advancePassedIndex, distanceToWaypointNm, eteSeconds } from '../route-math/progress.js';
+import { advancePassedIndex, alongTrackNm, distanceToWaypointNm, eteSeconds, findPassedIndex } from '../route-math/progress.js';
+import { findTOC, findTOD } from '../route-math/cruise-points.js';
 
 const BREADCRUMB_INTERVAL_MS = 5000;
 const HEADING_DELTA_DEG = 2;
@@ -14,6 +15,10 @@ const EMPTY_PROGRESS: FlightProgress = {
   distanceToDestNm: null,
   eteToDestSec: null,
   flightTimeSec: null,
+  tocPosition: null,
+  todPosition: null,
+  eteToTocSec: null,
+  eteToTodSec: null,
 };
 
 export class Aggregator extends EventEmitter {
@@ -37,7 +42,12 @@ export class Aggregator extends EventEmitter {
   }
 
   setPlan(plan: FlightPlan): void {
-    this.passedIndex = -1;
+    // Auto-resume on plan reload: seed passedIndex from the aircraft's
+    // current position so re-fetching mid-flight doesn't snap tracking back
+    // to the first waypoint. With no telemetry yet, start fresh at -1.
+    this.passedIndex = this.state.telemetry
+      ? findPassedIndex(this.state.telemetry.position, plan.waypoints)
+      : -1;
     this.state = { ...this.state, plan, progress: this.computeProgress(this.state.telemetry, plan) };
     this.emit('state', this.state);
     this.emit('plan', plan);
@@ -108,15 +118,61 @@ export class Aggregator extends EventEmitter {
   private computeProgress(t: RawTelemetry | null, plan: FlightPlan | null): FlightProgress {
     const flightTimeSec =
       t == null || this.takeoffAt == null ? null : Math.max(0, (t.timestamp - this.takeoffAt) / 1000);
-    if (t == null || plan == null) {
+    if (plan == null) {
       return { ...EMPTY_PROGRESS, flightTimeSec };
     }
-    this.passedIndex = advancePassedIndex(t.position, plan.waypoints, this.passedIndex, WAYPOINT_PASS_THRESHOLD_NM);
+    if (t == null) {
+      // Surface TOC/TOD positions as soon as a plan loads, even before any
+      // telemetry has arrived (lets the map markers render immediately).
+      return {
+        ...EMPTY_PROGRESS,
+        flightTimeSec,
+        tocPosition: findTOC(plan.waypoints, plan.cruiseAltitudeFt),
+        todPosition: findTOD(plan.waypoints, plan.cruiseAltitudeFt),
+      };
+    }
+    // Two complementary advancement paths, both forward-only via Math.max:
+    //  - advancePassedIndex (close-pass, 2 nm threshold) catches the precise
+    //    moment of crossing waypoints when on-route.
+    //  - findPassedIndex (along-track projection) catches the off-track case
+    //    where the aircraft is wide of the waypoint by more than the threshold.
+    const closePassIdx = advancePassedIndex(
+      t.position,
+      plan.waypoints,
+      this.passedIndex,
+      WAYPOINT_PASS_THRESHOLD_NM,
+    );
+    const projectedIdx = findPassedIndex(t.position, plan.waypoints);
+    this.passedIndex = Math.max(this.passedIndex, closePassIdx, projectedIdx);
     const nextIdx = this.passedIndex + 1;
     const nextWp = plan.waypoints[nextIdx] ?? null;
     const distNext = nextWp ? distanceToWaypointNm(t.position, nextWp) : null;
     const distDest = haversineNm(t.position.lat, t.position.lon, plan.destination.lat, plan.destination.lon);
     const gs = t.speed.ground;
+
+    const tocPosition = findTOC(plan.waypoints, plan.cruiseAltitudeFt);
+    const todPosition = findTOD(plan.waypoints, plan.cruiseAltitudeFt);
+    const distToToc =
+      tocPosition == null
+        ? null
+        : haversineNm(t.position.lat, t.position.lon, tocPosition.lat, tocPosition.lon);
+    const distToTod =
+      todPosition == null
+        ? null
+        : haversineNm(t.position.lat, t.position.lon, todPosition.lat, todPosition.lon);
+
+    // Detect "past TOC/TOD" via along-track on the origin → destination axis.
+    // Once past, suppress the ETE so the Clock card hops to the next phase
+    // (TOC → TOD → null → fall-back). Marker positions stay non-null per
+    // spec § 4.2 ("markers stay visible for the entire flight").
+    const aircraftAlong = alongTrackNm(t.position, plan.origin, plan.destination);
+    const tocAlong =
+      tocPosition == null ? null : alongTrackNm(tocPosition, plan.origin, plan.destination);
+    const todAlong =
+      todPosition == null ? null : alongTrackNm(todPosition, plan.origin, plan.destination);
+    const isPastToc = tocAlong != null && aircraftAlong >= tocAlong;
+    const isPastTod = todAlong != null && aircraftAlong >= todAlong;
+
     return {
       nextWaypoint: nextWp,
       distanceToNextNm: distNext,
@@ -124,6 +180,10 @@ export class Aggregator extends EventEmitter {
       distanceToDestNm: distDest,
       eteToDestSec: eteSeconds(distDest, gs),
       flightTimeSec,
+      tocPosition,
+      todPosition,
+      eteToTocSec: isPastToc || distToToc == null ? null : eteSeconds(distToToc, gs),
+      eteToTodSec: isPastTod || distToTod == null ? null : eteSeconds(distToTod, gs),
     };
   }
 
@@ -131,7 +191,7 @@ export class Aggregator extends EventEmitter {
     if (this.state.breadcrumb.length === 0) {
       this.lastBreadcrumbAt = t.timestamp;
       this.lastBreadcrumbHeading = t.heading.magnetic;
-      return [{ lat: t.position.lat, lon: t.position.lon }];
+      return [{ lat: t.position.lat, lon: t.position.lon, altMsl: t.altitude.msl }];
     }
     const elapsed = t.timestamp - this.lastBreadcrumbAt;
     const headingDelta =
@@ -141,7 +201,7 @@ export class Aggregator extends EventEmitter {
     if (elapsed >= BREADCRUMB_INTERVAL_MS || headingDelta >= HEADING_DELTA_DEG) {
       this.lastBreadcrumbAt = t.timestamp;
       this.lastBreadcrumbHeading = t.heading.magnetic;
-      return [...this.state.breadcrumb, { lat: t.position.lat, lon: t.position.lon }];
+      return [...this.state.breadcrumb, { lat: t.position.lat, lon: t.position.lon, altMsl: t.altitude.msl }];
     }
     return this.state.breadcrumb;
   }

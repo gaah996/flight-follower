@@ -2,6 +2,7 @@ import { MapContainer, TileLayer } from 'react-leaflet';
 import { AircraftMarker } from './AircraftMarker.js';
 import { BreadcrumbTrail } from './BreadcrumbTrail.js';
 import { CenterButton } from './CenterButton.js';
+import { CruisePoints } from './CruisePoints.js';
 import { MapController } from './MapController.js';
 import { PlannedRoute } from './PlannedRoute.js';
 import { ViewModeControl } from './ViewModeControl.js';
@@ -27,9 +28,10 @@ export function Map() {
   const tileUrl = TILE_URLS[theme];
   return (
     <div style={{ position: 'relative', height: '100%', width: '100%' }}>
-      <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%' }} worldCopyJump>
+      <MapContainer center={center} zoom={zoom} minZoom={3} style={{ height: '100%', width: '100%' }} worldCopyJump>
         <TileLayer key={tileUrl} attribution={ATTRIBUTION} url={tileUrl} />
         <PlannedRoute />
+        <CruisePoints />
         <BreadcrumbTrail />
         <AircraftMarker />
         <MapController />

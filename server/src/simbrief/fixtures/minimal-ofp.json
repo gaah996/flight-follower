@@ -17,12 +17,16 @@
   "alternate": { "icao_code": "LEBL", "pos_lat": "41.2971", "pos_long": "2.0785", "name": "Barcelona El Prat" },
   "times": {
     "sched_out": "1714053600",
-    "sched_in": "1714060800"
+    "sched_in": "1714060800",
+    "sched_block": "7200",
+    "est_block": "6900"
   },
   "navlog": {
     "fix": [
       { "ident": "MID", "pos_lat": "51.0531", "pos_long": "-0.6250", "altitude_feet": "15000" },
+      { "ident": "TOC", "pos_lat": "49.5000", "pos_long": "-1.5000", "altitude_feet": "36000" },
       { "ident": "OKRIX", "pos_lat": "46.3333", "pos_long": "-2.0000", "altitude_feet": "37000" },
+      { "ident": "TOD", "pos_lat": "43.5000", "pos_long": "-2.5000", "altitude_feet": "36000" },
       { "ident": "BAN", "pos_lat": "42.7500", "pos_long": "-2.8500", "altitude_feet": "37000" }
     ]
   }

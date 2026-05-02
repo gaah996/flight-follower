@@ -553,14 +553,16 @@ Returns null when neither path yields a position."
 
 ---
 
-## Task 4: Simbrief parser — block time + (conditional) constraints
+## Task 4: Simbrief parser — block time
 
 **Files:**
 - Modify: `server/src/simbrief/parser.ts`
 - Modify: `server/src/simbrief/parser.test.ts`
 - Modify: `server/src/simbrief/fixtures/minimal-ofp.json`
 
-This task has a conditional sub-section. Skip the constraint sub-steps if Task 1 returned NOT CLEAN.
+**Spike outcome (Task 1):** NOT CLEAN — waypoint constraints are not exposed cleanly in Simbrief's navlog. **All constraint sub-steps below are skipped.** The optional `Waypoint.altConstraint`/`speedConstraint` fields stay on `shared/types.ts` (Task 2) as forward-compat.
+
+**Spike side-finding:** block-time field is `times.est_block` (preferred) or `times.sched_block` (fallback) — **not** `times.est_time_enroute` as originally specified. See `docs/notes/spike-waypoint-constraints.md`. The fixture and parser below use the correct fields.
 
 - [ ] **Step 1: Extend the OFP fixture with TOC/TOD waypoints + block time**
 
@@ -587,7 +589,8 @@ Replace `server/src/simbrief/fixtures/minimal-ofp.json` with:
   "times": {
     "sched_out": "1714053600",
     "sched_in": "1714060800",
-    "est_time_enroute": "7200"
+    "sched_block": "7200",
+    "est_block": "6900"
   },
   "navlog": {
     "fix": [
@@ -601,26 +604,30 @@ Replace `server/src/simbrief/fixtures/minimal-ofp.json` with:
 }
 ```
 
-If Task 1 spike returned **CLEAN**, also add the constraint fields to a couple of fixes (use whatever shape the spike confirmed Simbrief uses — placeholder example below; substitute real field names):
-
-```json
-      { "ident": "MID", "pos_lat": "51.0531", "pos_long": "-0.6250", "altitude_feet": "15000",
-        "alt_const": "+5000", "speed_const": "-250" },
-```
-
 - [ ] **Step 2: Add failing tests in `parser.test.ts`**
 
 Inside the existing `describe('parseSimbriefOfp', …)` block, before its closing `});`, append:
 
 ```ts
-  it('extracts blockTimeSec from times.est_time_enroute (seconds)', () => {
+  it('extracts blockTimeSec from times.est_block (seconds, preferred)', () => {
     const plan = parseSimbriefOfp(fixture);
+    expect(plan.blockTimeSec).toBe(6900);
+  });
+
+  it('falls back to times.sched_block when est_block is absent', () => {
+    const without = {
+      ...fixture,
+      times: { sched_out: '1714053600', sched_in: '1714060800', sched_block: '7200' },
+    };
+    const plan = parseSimbriefOfp(without);
     expect(plan.blockTimeSec).toBe(7200);
   });
 
-  it('omits blockTimeSec when est_time_enroute is absent', () => {
-    const { times: _t, ...rest } = fixture;
-    const without = { ...rest, times: { sched_out: '1714053600', sched_in: '1714060800' } };
+  it('omits blockTimeSec when neither est_block nor sched_block is present', () => {
+    const without = {
+      ...fixture,
+      times: { sched_out: '1714053600', sched_in: '1714060800' },
+    };
     const plan = parseSimbriefOfp(without);
     expect(plan.blockTimeSec).toBeUndefined();
   });
@@ -630,29 +637,6 @@ Inside the existing `describe('parseSimbriefOfp', …)` block, before its closin
     const idents = plan.waypoints.map((w) => w.ident);
     expect(idents).toContain('TOC');
     expect(idents).toContain('TOD');
-  });
-```
-
-If the spike returned **CLEAN**, also append (substituting real field names):
-
-```ts
-  it('extracts altConstraint when present on a fix', () => {
-    const plan = parseSimbriefOfp(fixture);
-    const mid = plan.waypoints.find((w) => w.ident === 'MID');
-    expect(mid?.altConstraint).toEqual({ type: 'at-or-above', ft: 5000 });
-  });
-
-  it('extracts speedConstraint when present on a fix', () => {
-    const plan = parseSimbriefOfp(fixture);
-    const mid = plan.waypoints.find((w) => w.ident === 'MID');
-    expect(mid?.speedConstraint).toEqual({ type: 'at-or-below', kt: 250 });
-  });
-
-  it('omits altConstraint / speedConstraint when fields are absent', () => {
-    const plan = parseSimbriefOfp(fixture);
-    const tod = plan.waypoints.find((w) => w.ident === 'TOD');
-    expect(tod?.altConstraint).toBeUndefined();
-    expect(tod?.speedConstraint).toBeUndefined();
   });
 ```
 
@@ -667,7 +651,7 @@ Replace `server/src/simbrief/parser.ts` with:
 
 ```ts
 import { z } from 'zod';
-import type { FlightPlan, Waypoint } from '@ff/shared';
+import type { FlightPlan } from '@ff/shared';
 
 const numFromStr = z.union([z.number(), z.string().transform((s) => Number(s))]);
 
@@ -683,15 +667,13 @@ const FixSchema = z.object({
   pos_lat: numFromStr,
   pos_long: numFromStr,
   altitude_feet: numFromStr.optional(),
-  // Constraint fields (added in v1.3 if spike confirmed availability).
-  alt_const: z.string().optional(),
-  speed_const: z.string().optional(),
 });
 
 const TimesSchema = z.object({
   sched_out: numFromStr.optional(),
   sched_in: numFromStr.optional(),
-  est_time_enroute: numFromStr.optional(),
+  sched_block: numFromStr.optional(),
+  est_block: numFromStr.optional(),
 });
 
 const GeneralSchema = z.object({
@@ -720,31 +702,14 @@ const OfpSchema = z.object({
   }),
 });
 
-function parseAltConstraint(s: string | undefined): Waypoint['altConstraint'] {
-  if (!s) return undefined;
-  const m = s.match(/^([+\-]?)(\d+)$/);
-  if (!m) return undefined;
-  const ft = Number(m[2]);
-  if (!Number.isFinite(ft)) return undefined;
-  if (m[1] === '+') return { type: 'at-or-above', ft };
-  if (m[1] === '-') return { type: 'at-or-below', ft };
-  return { type: 'at', ft };
-}
-
-function parseSpeedConstraint(s: string | undefined): Waypoint['speedConstraint'] {
-  if (!s) return undefined;
-  const m = s.match(/^-?(\d+)$/);
-  if (!m) return undefined;
-  const kt = Number(m[1]);
-  if (!Number.isFinite(kt)) return undefined;
-  return { type: 'at-or-below', kt };
-}
-
 export function parseSimbriefOfp(raw: unknown): FlightPlan {
   const ofp = OfpSchema.parse(raw);
   const schedOutSec = ofp.times?.sched_out;
   const schedInSec = ofp.times?.sched_in;
-  const blockTimeSec = ofp.times?.est_time_enroute;
+  // est_block is what Simbrief shows as the OFP's "block time" (gate-to-gate,
+  // wind-adjusted). Falls back to sched_block when an estimate isn't present.
+  // Both are in seconds. See docs/notes/spike-waypoint-constraints.md.
+  const blockTimeSec = ofp.times?.est_block ?? ofp.times?.sched_block;
 
   const flightNumber =
     ofp.general?.icao_airline && ofp.general?.flight_number
@@ -781,8 +746,6 @@ export function parseSimbriefOfp(raw: unknown): FlightPlan {
       lat: f.pos_lat,
       lon: f.pos_long,
       plannedAltitude: f.altitude_feet,
-      altConstraint: parseAltConstraint(f.alt_const),
-      speedConstraint: parseSpeedConstraint(f.speed_const),
     })),
     scheduledOut: schedOutSec != null ? schedOutSec * 1000 : undefined,
     scheduledIn: schedInSec != null ? schedInSec * 1000 : undefined,
@@ -796,7 +759,7 @@ export function parseSimbriefOfp(raw: unknown): FlightPlan {
 }
 ```
 
-(If spike was NOT CLEAN, drop the `alt_const` / `speed_const` schema fields and the two parse helpers. The `Waypoint` shape still allows the optional fields to be undefined.)
+The `Waypoint.altConstraint` / `speedConstraint` shape stays optional in `shared/types.ts` (Task 2) for forward-compat, but no parser code touches them in v1.3.
 
 - [ ] **Step 5: Run tests, see pass**
 
@@ -821,11 +784,13 @@ Expected: all tests pass.
 
 ```bash
 git add server/src/simbrief/parser.ts server/src/simbrief/parser.test.ts server/src/simbrief/fixtures/minimal-ofp.json
-git commit -m "feat(server): Simbrief parser — blockTimeSec + waypoint constraints
+git commit -m "feat(server): Simbrief parser — blockTimeSec
 
-- Extracts plan.blockTimeSec from times.est_time_enroute (seconds).
+- Extracts plan.blockTimeSec from times.est_block (preferred,
+  wind-adjusted gate-to-gate); falls back to times.sched_block.
+  See docs/notes/spike-waypoint-constraints.md.
 - Fixture now includes named TOC / TOD waypoints (used by cruise-points).
-- Parser accepts optional alt_const / speed_const per fix [if spike succeeded]."
+- Waypoint constraints deferred to v1.4 per spike outcome."
 ```
 
 ---
