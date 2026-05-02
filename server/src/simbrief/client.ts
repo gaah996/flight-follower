@@ -8,7 +8,7 @@ export class SimbriefError extends Error {
   }
 }
 
-export async function fetchLatestOfp(userId: string): Promise<FlightPlan> {
+export async function fetchLatestOfp(userId: string): Promise<{ raw: unknown; plan: FlightPlan }> {
   if (!userId.trim()) {
     throw new SimbriefError('NO_USER_ID', 'Simbrief user ID not configured');
   }
@@ -33,7 +33,7 @@ export async function fetchLatestOfp(userId: string): Promise<FlightPlan> {
   }
 
   try {
-    return parseSimbriefOfp(json);
+    return { raw: json, plan: parseSimbriefOfp(json) };
   } catch (err) {
     throw new SimbriefError('BAD_OFP', `Simbrief OFP failed validation: ${(err as Error).message}`);
   }

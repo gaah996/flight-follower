@@ -58,7 +58,7 @@ export async function buildHttpApp(opts: HttpOptions): Promise<FastifyInstance> 
       return { error: 'NO_USER_ID', message: 'Simbrief user ID not configured' };
     }
     try {
-      const plan = await fetchLatestOfp(settings.simbriefUserId);
+      const { plan } = await fetchLatestOfp(settings.simbriefUserId);
       opts.aggregator.setPlan(plan);
       return plan;
     } catch (err) {
