@@ -16,6 +16,8 @@ export type StartOptions = {
   host?: string;
   disableSim?: boolean;
   recordPath?: string;
+  /** When set, /api/simbrief/fetch reads from this file instead of the network. Dev-only. */
+  simbriefFixturePath?: string;
 };
 
 export type RunningServer = {
@@ -71,6 +73,8 @@ export async function start(opts: StartOptions): Promise<RunningServer> {
     aggregator,
     settingsPath: opts.configPath,
     staticPath: opts.staticPath,
+    simbriefFixturePath: opts.simbriefFixturePath,
+    recordPath: opts.recordPath,
   });
 
   const stopWs = attachWsBroadcaster(app, aggregator);
