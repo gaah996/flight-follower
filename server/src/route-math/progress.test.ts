@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { Waypoint } from '@ff/shared';
 import { eteSeconds, distanceToWaypointNm, advancePassedIndex, findPassedIndex, alongTrackNm, advancePassedIndexWindowed } from './progress.js';
 
 const wpts = [
@@ -102,6 +103,24 @@ describe('findPassedIndex', () => {
 
   it('returns -1 for a single waypoint', () => {
     expect(findPassedIndex({ lat: 0, lon: 0 }, [wpts[0]!])).toBe(-1);
+  });
+
+  it('regression: at the route start, picks the first SID-shape leg even when later legs are within reach', () => {
+    // Simulates the LFPG → LEPA failure mode: real navlog has multiple
+    // SID-and-early-enroute legs within 200 nm of the origin. With a
+    // pure reach-gate-in-loop, several of those legs could each misfire
+    // (bearing alignment) and the cumulative max jumps the cursor.
+    // Closest-leg projects only onto the most relevant leg.
+    const sidShape: Waypoint[] = [
+      // Mimics a SID departing south, then a doubling-back leg within
+      // 200 nm of origin (49°N, 0°E) that previously misfired.
+      { ident: 'W0', lat: 48, lon: 0 }, // 60 nm south of origin
+      { ident: 'W1', lat: 47, lon: 0 }, // 120 nm south
+      { ident: 'W2', lat: 46, lon: 0 }, // 180 nm south
+      { ident: 'W3', lat: 47, lon: 0 }, // doubles back north 1° (180 nm from origin)
+      { ident: 'W4', lat: 45, lon: 0 }, // 240 nm south (reach-gated by closest-leg's bestDist)
+    ];
+    expect(findPassedIndex({ lat: 49, lon: 0 }, sidShape)).toBe(-1);
   });
 });
 

@@ -58,58 +58,56 @@ export function advancePassedIndex(
 /**
  * Estimate which waypoint has been most recently passed based purely on
  * current position. Used to seed the passedIndex cursor when a plan is
- * loaded mid-flight (e.g. after re-fetching from Simbrief) so tracking
- * doesn't snap back to the first waypoint.
+ * loaded with telemetry already populated (e.g. user clicks Fetch with
+ * the aircraft sitting at the gate, or re-fetches mid-flight) so tracking
+ * doesn't snap back to the first waypoint or jump to the destination.
  *
- * Walks each leg [i, i+1] and projects the aircraft onto it via along-track
- * distance. If the projection lands past the leg's length, waypoint i+1 has
- * been passed (passed = i+1). If it lands within the leg, waypoint i has
- * been passed but i+1 has not (passed = i). Returns the largest such index
- * across all legs, or -1 when the aircraft is still approaching the first
- * waypoint or no leg analysis succeeds.
+ * Algorithm: find the leg [i, i+1] whose nearest endpoint is closest to
+ * pos, then project pos onto only that leg. This is the semantically
+ * correct "which leg am I on?" question; an unbounded full-scan
+ * along-track misfires when a far leg's bearing aligns with the bearing
+ * from its start back to pos (the LFPG → LEPA bug). Tie-breaks pick the
+ * smaller-index leg, which keeps cursor advancement at a shared waypoint
+ * conservative (advance only when along-track on the earlier leg
+ * exceeds its length).
  *
- * Using along-track instead of raw distance correctly handles the
- * "just past waypoint N" case — when the aircraft is close to N but on the
- * far side, the along-track value exceeds the [N-1, N] leg length and
- * tracking advances to N+1 (rather than re-targeting N).
+ * Returns:
+ *   -1 if no leg's nearest endpoint is within FIND_PASSED_INDEX_REACH_NM
+ *      of pos (defensive: the aircraft is too far from the route to make
+ *      a confident inference; caller should treat the cursor as fresh).
+ *   bestLeg + 1 if along-track on the chosen leg meets or exceeds the
+ *      leg's length (we have passed waypoint i+1).
+ *   bestLeg if along-track is positive but less than the leg's length
+ *      (we are between waypoints i and i+1 along that leg).
+ *   -1 if along-track is non-positive (we are still approaching, or the
+ *      projection is degenerate).
  *
- * Reach-gated: legs whose endpoints are both farther than 200 nm from pos
- * are skipped. Without this gate, a far leg whose bearing aligns with the
- * bearing from its start back to pos would misfire (along-track exceeds
- * legNm with positive sign). Use only for one-shot seeding such as
- * plan-load; for per-tick advancement, use advancePassedIndexWindowed.
+ * For per-tick advancement, use advancePassedIndexWindowed instead.
  */
 export function findPassedIndex(pos: LatLon, waypoints: Waypoint[]): number {
-  let passed = -1;
+  if (waypoints.length < 2) return -1;
+  let bestLeg = -1;
+  let bestDist = Infinity;
   for (let i = 0; i < waypoints.length - 1; i++) {
     const a = waypoints[i]!;
     const b = waypoints[i + 1]!;
-    const legNm = haversineNm(a.lat, a.lon, b.lat, b.lon);
-    if (legNm === 0) continue;
-    // Reach gate: full-scan along-track misfires when pos is far from a leg
-    // but roughly collinear with it (the leg's bearing aligns with the
-    // bearing from the leg's start back to pos). This is the bug behind
-    // the LFPG → LEPA "next jumps to destination at plan-load" report:
-    // a near-destination leg's bearing happened to align with the bearing
-    // from that leg's start back to the LFPG origin, so the projection
-    // returned a positive value much greater than the leg's natural
-    // length. Skip legs whose endpoints are both farther than
-    // FIND_PASSED_INDEX_REACH_NM from pos — the aircraft cannot
-    // realistically have just passed a waypoint hundreds of nm away.
-    const dToA = haversineNm(pos.lat, pos.lon, a.lat, a.lon);
-    const dToB = haversineNm(pos.lat, pos.lon, b.lat, b.lon);
-    if (Math.min(dToA, dToB) > FIND_PASSED_INDEX_REACH_NM) continue;
-    const along = alongTrackNm(pos, a, b);
-    if (along >= legNm) {
-      // Past waypoint i+1 along this leg's direction.
-      if (i + 1 > passed) passed = i + 1;
-    } else if (along > 0) {
-      // Between waypoint i and i+1 on this leg.
-      if (i > passed) passed = i;
+    const da = haversineNm(pos.lat, pos.lon, a.lat, a.lon);
+    const db = haversineNm(pos.lat, pos.lon, b.lat, b.lon);
+    const d = Math.min(da, db);
+    if (d < bestDist) {
+      bestDist = d;
+      bestLeg = i;
     }
-    // along < 0 → projection is behind waypoint i on this leg; ignore.
   }
-  return passed;
+  if (bestLeg < 0 || bestDist > FIND_PASSED_INDEX_REACH_NM) return -1;
+  const a = waypoints[bestLeg]!;
+  const b = waypoints[bestLeg + 1]!;
+  const legNm = haversineNm(a.lat, a.lon, b.lat, b.lon);
+  if (legNm === 0) return -1;
+  const along = alongTrackNm(pos, a, b);
+  if (along >= legNm) return bestLeg + 1;
+  if (along > 0) return bestLeg;
+  return -1;
 }
 
 /**
