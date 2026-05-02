@@ -418,4 +418,44 @@ describe('Aggregator TOC/TOD', () => {
     expect(a.getState().progress.tocPosition).toBeNull();
     expect(a.getState().progress.todPosition).toBeNull();
   });
+
+  it('null eteToTocSec once aircraft is past TOC, but tocPosition stays', () => {
+    const a = new Aggregator();
+    a.setPlan(PLAN_WITH_NAMED);
+    // Aircraft at lon 4: past TOC (lon 2) but before TOD (lon 8).
+    a.ingestTelemetry(
+      telem({
+        timestamp: 0,
+        position: { lat: 0, lon: 4 },
+        onGround: false,
+        speed: { ground: 200, indicated: 200, mach: 0.3 },
+      }),
+    );
+    const s = a.getState();
+    expect(s.progress.eteToTocSec).toBeNull();
+    expect(s.progress.tocPosition).toEqual({ lat: 0, lon: 2 });
+    // TOD still ahead at lon 8 → eteToTodSec should still compute.
+    expect(s.progress.eteToTodSec).not.toBeNull();
+    expect(s.progress.eteToTodSec!).toBeGreaterThan(0);
+  });
+
+  it('null eteToTodSec once aircraft is past TOD as well', () => {
+    const a = new Aggregator();
+    a.setPlan(PLAN_WITH_NAMED);
+    // Aircraft at lon 9: past both TOC and TOD.
+    a.ingestTelemetry(
+      telem({
+        timestamp: 0,
+        position: { lat: 0, lon: 9 },
+        onGround: false,
+        speed: { ground: 200, indicated: 200, mach: 0.3 },
+      }),
+    );
+    const s = a.getState();
+    expect(s.progress.eteToTocSec).toBeNull();
+    expect(s.progress.eteToTodSec).toBeNull();
+    // Markers stay visible.
+    expect(s.progress.tocPosition).not.toBeNull();
+    expect(s.progress.todPosition).not.toBeNull();
+  });
 });

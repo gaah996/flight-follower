@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import type { FlightPlan, FlightProgress, FlightState, RawTelemetry } from '@ff/shared';
 import { haversineNm } from '../route-math/distance.js';
-import { advancePassedIndex, distanceToWaypointNm, eteSeconds, findPassedIndex } from '../route-math/progress.js';
+import { advancePassedIndex, alongTrackNm, distanceToWaypointNm, eteSeconds, findPassedIndex } from '../route-math/progress.js';
 import { findTOC, findTOD } from '../route-math/cruise-points.js';
 
 const BREADCRUMB_INTERVAL_MS = 5000;
@@ -161,6 +161,18 @@ export class Aggregator extends EventEmitter {
         ? null
         : haversineNm(t.position.lat, t.position.lon, todPosition.lat, todPosition.lon);
 
+    // Detect "past TOC/TOD" via along-track on the origin → destination axis.
+    // Once past, suppress the ETE so the Clock card hops to the next phase
+    // (TOC → TOD → null → fall-back). Marker positions stay non-null per
+    // spec § 4.2 ("markers stay visible for the entire flight").
+    const aircraftAlong = alongTrackNm(t.position, plan.origin, plan.destination);
+    const tocAlong =
+      tocPosition == null ? null : alongTrackNm(tocPosition, plan.origin, plan.destination);
+    const todAlong =
+      todPosition == null ? null : alongTrackNm(todPosition, plan.origin, plan.destination);
+    const isPastToc = tocAlong != null && aircraftAlong >= tocAlong;
+    const isPastTod = todAlong != null && aircraftAlong >= todAlong;
+
     return {
       nextWaypoint: nextWp,
       distanceToNextNm: distNext,
@@ -170,8 +182,8 @@ export class Aggregator extends EventEmitter {
       flightTimeSec,
       tocPosition,
       todPosition,
-      eteToTocSec: distToToc == null ? null : eteSeconds(distToToc, gs),
-      eteToTodSec: distToTod == null ? null : eteSeconds(distToTod, gs),
+      eteToTocSec: isPastToc || distToToc == null ? null : eteSeconds(distToToc, gs),
+      eteToTodSec: isPastTod || distToTod == null ? null : eteSeconds(distToTod, gs),
     };
   }
 
