@@ -29,7 +29,7 @@ type Props = {
 // Hardcoded because the height: 100% chain doesn't survive HeroUI's Tooltip
 // wrapping. JSX order in the parent ensures the tick paints on top of the
 // progress fill.
-const TICK_HEIGHT = 12;
+const TICK_HEIGHT = 8;
 const TICK_WIDTH = 8;
 
 function CruiseTick({ pct, label }: { pct: number; label: string }) {
@@ -42,7 +42,7 @@ function CruiseTick({ pct, label }: { pct: number; label: string }) {
       className="absolute"
       style={{
         left: `${pct * 100}%`,
-        top: -2,
+        top: -10,
         transform: "translateX(-50%)",
         width: TICK_WIDTH,
         height: TICK_HEIGHT,
