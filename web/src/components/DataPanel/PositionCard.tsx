@@ -41,6 +41,9 @@ export function PositionCard() {
             )}
           </span>
         </Row>
+        <Row label="TRK" tooltip="Ground track (true)">
+          {t ? `${fmtNum(t.track.true, 0)}°T` : dash}
+        </Row>
       </Card.Content>
     </Card>
   );
