@@ -91,3 +91,44 @@ export function findPassedIndex(pos: LatLon, waypoints: Waypoint[]): number {
   }
   return passed;
 }
+
+/**
+ * Per-tick advancement bounded to a window of legs around the current
+ * cursor. Considers legs [i, i+1] where i is in
+ *   [max(0, currentPassedIndex - 1), min(waypoints.length - 2, currentPassedIndex + 2)].
+ * Within that window, applies the same along-track logic as findPassedIndex
+ * (project pos onto leg [i, i+1]; advance to i+1 when along >= legNm,
+ * otherwise mark i as passed when along > 0); takes the max with
+ * currentPassedIndex (forward-only).
+ *
+ * Why a window: full-scan along-track misfires when pos is far from a leg
+ * but roughly collinear with it (e.g. at the LFPG origin, a near-destination
+ * leg's bearing aligns with the bearing from that leg's start back to LFPG;
+ * along-track returns a large positive value despite pos being hundreds of
+ * nm away). Reconciliation only needs to look near the current expected
+ * position; arbitrary-distance jumps across the route are not a real
+ * telemetry-tick scenario.
+ */
+export function advancePassedIndexWindowed(
+  pos: LatLon,
+  waypoints: Waypoint[],
+  currentPassedIndex: number,
+): number {
+  if (waypoints.length < 2) return currentPassedIndex;
+  const lo = Math.max(0, currentPassedIndex - 1);
+  const hi = Math.min(waypoints.length - 2, currentPassedIndex + 2);
+  let passed = currentPassedIndex;
+  for (let i = lo; i <= hi; i++) {
+    const a = waypoints[i]!;
+    const b = waypoints[i + 1]!;
+    const legNm = haversineNm(a.lat, a.lon, b.lat, b.lon);
+    if (legNm === 0) continue;
+    const along = alongTrackNm(pos, a, b);
+    if (along >= legNm) {
+      if (i + 1 > passed) passed = i + 1;
+    } else if (along > 0) {
+      if (i > passed) passed = i;
+    }
+  }
+  return passed;
+}

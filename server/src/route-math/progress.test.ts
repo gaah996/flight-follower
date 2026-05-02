@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { eteSeconds, distanceToWaypointNm, advancePassedIndex, findPassedIndex, alongTrackNm } from './progress.js';
+import { eteSeconds, distanceToWaypointNm, advancePassedIndex, findPassedIndex, alongTrackNm, advancePassedIndexWindowed } from './progress.js';
 
 const wpts = [
   { ident: 'A', lat: 0, lon: 0 },
@@ -102,5 +102,58 @@ describe('findPassedIndex', () => {
 
   it('returns -1 for a single waypoint', () => {
     expect(findPassedIndex({ lat: 0, lon: 0 }, [wpts[0]!])).toBe(-1);
+  });
+});
+
+describe('advancePassedIndexWindowed', () => {
+  // Reuses `wpts` declared at the top of this file (A,B,C at lon 0,1,2).
+
+  it('does not advance from -1 when aircraft is far north of all waypoints', () => {
+    // Window at passedIndex=-1 covers leg [0,1] only. Aircraft at lat 5 lon 0
+    // is far north; bearing from A to pos differs from A→B (east), so
+    // along-track is small or negative. No advance.
+    expect(advancePassedIndexWindowed({ lat: 5, lon: 0 }, wpts, -1)).toBe(-1);
+  });
+
+  it('advances to 0 when aircraft is past A on leg [A,B]', () => {
+    // Aircraft 0.6° east of A: along-track on [A,B] ~36 nm out of ~60 nm.
+    expect(advancePassedIndexWindowed({ lat: 0, lon: 0.6 }, wpts, -1)).toBe(0);
+  });
+
+  it('advances to 1 when along-track on [A,B] exceeds legNm', () => {
+    expect(advancePassedIndexWindowed({ lat: 0, lon: 1.05 }, wpts, -1)).toBe(1);
+  });
+
+  it('advances to 2 when on leg [B,C] past C', () => {
+    expect(advancePassedIndexWindowed({ lat: 0, lon: 2.05 }, wpts, 1)).toBe(2);
+  });
+
+  it('forward-only: never returns less than currentPassedIndex', () => {
+    expect(advancePassedIndexWindowed({ lat: -5, lon: 0 }, wpts, 1)).toBe(1);
+  });
+
+  it('returns currentPassedIndex unchanged when waypoints has fewer than 2 elements', () => {
+    expect(advancePassedIndexWindowed({ lat: 0, lon: 0 }, [], -1)).toBe(-1);
+    expect(advancePassedIndexWindowed({ lat: 0, lon: 0 }, [wpts[0]!], -1)).toBe(-1);
+  });
+
+  it('regression: does not consider out-of-window legs at the route start (LFPG-shape)', () => {
+    // Synthetic doubling-back route: leg [3,4] (C → D) points NORTH (43°N
+    // → 44°N). Aircraft at origin (49°N) lies on the bearing-extension of
+    // C → D. Full-scan findPassedIndex returns >= 3 for this position;
+    // windowed at passedIndex=-1 must return -1 because legs [3,4] and
+    // beyond are outside the window [0,1] when N=5 waypoints.
+    const lfpgShape = [
+      { ident: 'A', lat: 47, lon: 0 },
+      { ident: 'B', lat: 45, lon: 0 },
+      { ident: 'C', lat: 43, lon: 0 },
+      { ident: 'D', lat: 44, lon: 0 }, // doubles back north 1°
+      { ident: 'E', lat: 40, lon: 0 },
+    ];
+    expect(advancePassedIndexWindowed({ lat: 49, lon: 0 }, lfpgShape, -1)).toBe(-1);
+    // Sanity: the unbounded variant DOES misfire here (this is the bug we
+    // are fixing — kept as a regression anchor; if findPassedIndex is ever
+    // refined we'll re-evaluate this assertion).
+    expect(findPassedIndex({ lat: 49, lon: 0 }, lfpgShape)).toBeGreaterThanOrEqual(3);
   });
 });
