@@ -131,7 +131,19 @@ export class Aggregator extends EventEmitter {
         todPosition: findTOD(plan.waypoints, plan.cruiseAltitudeFt),
       };
     }
-    this.passedIndex = advancePassedIndex(t.position, plan.waypoints, this.passedIndex, WAYPOINT_PASS_THRESHOLD_NM);
+    // Two complementary advancement paths, both forward-only via Math.max:
+    //  - advancePassedIndex (close-pass, 2 nm threshold) catches the precise
+    //    moment of crossing waypoints when on-route.
+    //  - findPassedIndex (along-track projection) catches the off-track case
+    //    where the aircraft is wide of the waypoint by more than the threshold.
+    const closePassIdx = advancePassedIndex(
+      t.position,
+      plan.waypoints,
+      this.passedIndex,
+      WAYPOINT_PASS_THRESHOLD_NM,
+    );
+    const projectedIdx = findPassedIndex(t.position, plan.waypoints);
+    this.passedIndex = Math.max(this.passedIndex, closePassIdx, projectedIdx);
     const nextIdx = this.passedIndex + 1;
     const nextWp = plan.waypoints[nextIdx] ?? null;
     const distNext = nextWp ? distanceToWaypointNm(t.position, nextWp) : null;

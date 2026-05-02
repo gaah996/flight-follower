@@ -150,6 +150,35 @@ describe('Aggregator progress', () => {
     expect(s.progress.eteToDestSec).toBeGreaterThan(0);
   });
 
+  it('advances passedIndex via along-track when off-track wider than the close-pass threshold', () => {
+    // Aircraft 10 nm north of the route (~0.16°) at lon 5.5 — well past
+    // W2 along-track but never within 2 nm of any waypoint, so the
+    // close-pass advancer alone would leave the cursor stuck.
+    const a = new Aggregator();
+    a.setPlan(PLAN);
+    // Seed with an on-route ingest at W1 so the cursor starts at 0.
+    a.ingestTelemetry(
+      telem({
+        timestamp: 0,
+        position: { lat: 0, lon: 2.001 },
+        onGround: false,
+        speed: { ground: 200, indicated: 200, mach: 0.3 },
+      }),
+    );
+    expect(a.getState().progress.nextWaypoint?.ident).toBe('W2');
+
+    // Now drift north, past W2 along-track but ~10 nm wide of the leg.
+    a.ingestTelemetry(
+      telem({
+        timestamp: 60_000,
+        position: { lat: 0.166, lon: 5.5 },
+        onGround: false,
+        speed: { ground: 200, indicated: 200, mach: 0.3 },
+      }),
+    );
+    expect(a.getState().progress.nextWaypoint?.ident).toBe('W3');
+  });
+
   it('auto-resumes passedIndex from current position on plan reload', () => {
     // Simulates re-fetching the Simbrief plan mid-flight. The aircraft is
     // positioned between W1 and W2; loading the plan should seed the cursor
