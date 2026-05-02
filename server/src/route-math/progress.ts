@@ -112,20 +112,21 @@ export function findPassedIndex(pos: LatLon, waypoints: Waypoint[]): number {
 
 /**
  * Per-tick advancement bounded to a window of legs around the current
- * cursor. Considers legs [i, i+1] where i is in
- *   [max(0, currentPassedIndex - 1), min(waypoints.length - 2, currentPassedIndex + 2)].
- * Within that window, applies the same along-track logic as findPassedIndex
- * (project pos onto leg [i, i+1]; advance to i+1 when along >= legNm,
- * otherwise mark i as passed when along > 0); takes the max with
- * currentPassedIndex (forward-only).
+ * cursor. Within the window [max(0, currentPassedIndex - 1),
+ * min(waypoints.length - 2, currentPassedIndex + 2)], find the leg whose
+ * nearest endpoint is closest to pos (smaller-index tiebreak), project
+ * pos onto only that leg, and advance forward-only based on along-track
+ * on that leg.
  *
- * Why a window: full-scan along-track misfires when pos is far from a leg
- * but roughly collinear with it (e.g. at the LFPG origin, a near-destination
- * leg's bearing aligns with the bearing from that leg's start back to LFPG;
- * along-track returns a large positive value despite pos being hundreds of
- * nm away). Reconciliation only needs to look near the current expected
- * position; arbitrary-distance jumps across the route are not a real
- * telemetry-tick scenario.
+ * Why closest-leg-in-window: projecting onto every leg in the window and
+ * reducing via Math.max gives 4 separate chances per tick for the
+ * "leg's bearing aligns with bearing-from-leg-start-to-pos" misfire to
+ * fire. Closest-leg picks only the most relevant leg, which is by
+ * definition the one we're actually navigating, and projects only that
+ * one. Same algorithm as findPassedIndex; consistent across the three
+ * reconciliation paths.
+ *
+ * Forward-only via Math.max with currentPassedIndex.
  */
 export function advancePassedIndexWindowed(
   pos: LatLon,
@@ -135,18 +136,31 @@ export function advancePassedIndexWindowed(
   if (waypoints.length < 2) return currentPassedIndex;
   const lo = Math.max(0, currentPassedIndex - 1);
   const hi = Math.min(waypoints.length - 2, currentPassedIndex + 2);
-  let passed = currentPassedIndex;
+  if (lo > hi) return currentPassedIndex;
+
+  let bestLeg = -1;
+  let bestDist = Infinity;
   for (let i = lo; i <= hi; i++) {
     const a = waypoints[i]!;
     const b = waypoints[i + 1]!;
-    const legNm = haversineNm(a.lat, a.lon, b.lat, b.lon);
-    if (legNm === 0) continue;
-    const along = alongTrackNm(pos, a, b);
-    if (along >= legNm) {
-      if (i + 1 > passed) passed = i + 1;
-    } else if (along > 0) {
-      if (i > passed) passed = i;
+    const da = haversineNm(pos.lat, pos.lon, a.lat, a.lon);
+    const db = haversineNm(pos.lat, pos.lon, b.lat, b.lon);
+    const d = Math.min(da, db);
+    if (d < bestDist) {
+      bestDist = d;
+      bestLeg = i;
     }
   }
-  return passed;
+  if (bestLeg < 0) return currentPassedIndex;
+
+  const a = waypoints[bestLeg]!;
+  const b = waypoints[bestLeg + 1]!;
+  const legNm = haversineNm(a.lat, a.lon, b.lat, b.lon);
+  if (legNm === 0) return currentPassedIndex;
+  const along = alongTrackNm(pos, a, b);
+
+  let candidate = currentPassedIndex;
+  if (along >= legNm) candidate = bestLeg + 1;
+  else if (along > 0) candidate = bestLeg;
+  return Math.max(currentPassedIndex, candidate);
 }

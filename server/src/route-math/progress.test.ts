@@ -177,4 +177,24 @@ describe('advancePassedIndexWindowed', () => {
     // misfire shape.
     expect(findPassedIndex({ lat: 49, lon: 0 }, lfpgShape)).toBe(-1);
   });
+
+  it('regression: closest-leg projection avoids the doubling-back-in-window misfire', () => {
+    // Synthetic of the user-reported "PG270 → skipped PG290+PON → RBT"
+    // bug. Aircraft is between W0 (50°N) and W1 (48°N) on a southbound
+    // route, currentPassedIndex=0 (W0 already passed). Window covers
+    // legs [0..2] = [W0,W1], [W1,W2], [W2,W3]. The doubling-back leg
+    // [W2,W3] points north (45°N → 46°N), and its bearing from W2
+    // aligns with the bearing from W2 back to pos at lat 48.5°N.
+    // Old "project on all + Math.max" gave bestPassed = 3 (jumping to
+    // W4). Closest-leg picks only [W0,W1] (nearest endpoint at min 30 nm)
+    // and projects only there, returning passed = 0.
+    const wptsBack: Waypoint[] = [
+      { ident: 'W0', lat: 50, lon: 0 },
+      { ident: 'W1', lat: 48, lon: 0 },
+      { ident: 'W2', lat: 45, lon: 0 },
+      { ident: 'W3', lat: 46, lon: 0 }, // doubles back north 1°
+      { ident: 'W4', lat: 40, lon: 0 },
+    ];
+    expect(advancePassedIndexWindowed({ lat: 48.5, lon: 0 }, wptsBack, 0)).toBe(0);
+  });
 });
