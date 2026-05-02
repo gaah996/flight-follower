@@ -1,8 +1,9 @@
 import { EventEmitter } from 'node:events';
 import type { FlightPlan, FlightProgress, FlightState, RawTelemetry } from '@ff/shared';
 import { haversineNm } from '../route-math/distance.js';
-import { advancePassedIndex, alongTrackNm, distanceToWaypointNm, eteSeconds, findPassedIndex } from '../route-math/progress.js';
+import { advancePassedIndex, advancePassedIndexWindowed, alongTrackNm, distanceToWaypointNm, eteSeconds, findPassedIndex } from '../route-math/progress.js';
 import { findTOC, findTOD } from '../route-math/cruise-points.js';
+import { routeRemainingNm } from '../route-math/route-progress.js';
 
 const BREADCRUMB_INTERVAL_MS = 5000;
 const HEADING_DELTA_DEG = 2;
@@ -142,12 +143,16 @@ export class Aggregator extends EventEmitter {
       this.passedIndex,
       WAYPOINT_PASS_THRESHOLD_NM,
     );
-    const projectedIdx = findPassedIndex(t.position, plan.waypoints);
-    this.passedIndex = Math.max(this.passedIndex, closePassIdx, projectedIdx);
+    const windowedIdx = advancePassedIndexWindowed(
+      t.position,
+      plan.waypoints,
+      this.passedIndex,
+    );
+    this.passedIndex = Math.max(this.passedIndex, closePassIdx, windowedIdx);
     const nextIdx = this.passedIndex + 1;
     const nextWp = plan.waypoints[nextIdx] ?? null;
     const distNext = nextWp ? distanceToWaypointNm(t.position, nextWp) : null;
-    const distDest = haversineNm(t.position.lat, t.position.lon, plan.destination.lat, plan.destination.lon);
+    const distDest = routeRemainingNm(t.position, plan, this.passedIndex);
     const gs = t.speed.ground;
 
     const tocPosition = findTOC(plan.waypoints, plan.cruiseAltitudeFt);

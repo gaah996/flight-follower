@@ -198,6 +198,36 @@ describe('Aggregator progress', () => {
     a.setPlan(PLAN);
     expect(a.getState().progress.nextWaypoint?.ident).toBe('W2');
   });
+
+  it('does not jump ahead at the route start when a far leg points back toward origin', () => {
+    // Regression for the LFPG → LEPA bug: a far leg pointing roughly back
+    // toward the aircraft would, with the old per-tick full-scan
+    // findPassedIndex, advance the cursor mid-route on the very first
+    // telemetry tick after plan-load.
+    const PLAN_LFPG_SHAPE: FlightPlan = {
+      fetchedAt: 0,
+      origin: { icao: 'AAAA', lat: 49, lon: 0 },
+      destination: { icao: 'BBBB', lat: 38, lon: 0 },
+      waypoints: [
+        { ident: 'W1', lat: 47, lon: 0 },
+        { ident: 'W2', lat: 45, lon: 0 },
+        { ident: 'W3', lat: 43, lon: 0 },
+        { ident: 'W4', lat: 44, lon: 0 }, // doubles back north 1°
+        { ident: 'W5', lat: 40, lon: 0 },
+      ],
+    };
+    const a = new Aggregator();
+    a.setPlan(PLAN_LFPG_SHAPE);
+    a.ingestTelemetry(
+      telem({
+        timestamp: 0,
+        position: { lat: 49, lon: 0 },
+        onGround: true,
+        speed: { ground: 5, indicated: 5, mach: 0 },
+      }),
+    );
+    expect(a.getState().progress.nextWaypoint?.ident).toBe('W1');
+  });
 });
 
 describe('Aggregator near-(0,0) filter', () => {
