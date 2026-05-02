@@ -171,7 +171,11 @@ A pure cross-track gate doesn't fix it — LFPG is roughly on-axis, so cross-tra
 
 **Fix.** Per-tick reconciliation only considers legs in a small window around `passedIndex`. The full scan stays as-is — but it runs only on `setPlan` (mid-flight resume seed), not on every telemetry tick.
 
-**Implementation.** New helper alongside the existing functions in `server/src/route-math/progress.ts`:
+**Implementation.** Two coordinated changes in `server/src/route-math/progress.ts`:
+
+1. **Reach-gate `findPassedIndex` itself.** Skip legs whose endpoints are both farther than 200 nm from `pos`. The aircraft cannot realistically have just passed a waypoint hundreds of nm away. This is necessary because `setPlan` calls `findPassedIndex` to seed the cursor when telemetry is already populated — the LFPG → LEPA bug reproduces here just as it did per-tick (a near-destination leg's bearing aligns with the bearing from its start back to LFPG, projection returns a positive value much greater than the leg's natural length, `passedIndex` jumps near route end, `routeRemainingNm` clamps to 0). The threshold is a module-level constant `FIND_PASSED_INDEX_REACH_NM = 200`.
+
+2. **New windowed helper for per-tick advancement.**
 
 ```ts
 /**
@@ -195,7 +199,7 @@ export function advancePassedIndexWindowed(
 ): number;
 ```
 
-`state/aggregator.ts` `computeProgress` is rewritten to use:
+`state/aggregator.ts` `computeProgress` is rewritten to use the windowed helper per tick (full-scan `findPassedIndex` is no longer called here). `setPlan` still calls `findPassedIndex` — now safe because of the reach-gate above:
 
 ```ts
 const closePassIdx = advancePassedIndex(
@@ -212,15 +216,19 @@ const windowedIdx = advancePassedIndexWindowed(
 this.passedIndex = Math.max(this.passedIndex, closePassIdx, windowedIdx);
 ```
 
-— i.e. `findPassedIndex` is no longer called from per-tick. Plan-load (`setPlan`) keeps calling `findPassedIndex` exactly as today: it's the right tool when seeding mid-flight from scratch. The reach-gating refinement on `findPassedIndex` itself is *not* required for v1.3.1, because plan-load happens at known-aircraft-positions where the projection works correctly (re-fetching from cruise gives a sensible result, which is exactly what the user observed when they re-fetched to recover).
+— i.e. `findPassedIndex` is no longer called from per-tick. Plan-load (`setPlan`) keeps calling `findPassedIndex`, which is now reach-gated per § 4.4(1) so the LFPG-shape bug doesn't leak in via the seed.
 
 **Window choice.** `[passedIndex - 1, passedIndex + 2]`. Looks one leg backward (defensive — we just left this leg) and two legs forward (covers "we're already on the next leg" and "we've just advanced and the next-after is also reachable in a fast sequence"). Out-of-bounds indices are clamped to `[0, waypoints.length - 1]`.
 
 **Tests.** `server/src/route-math/progress.test.ts` extended:
-- LFPG-shape regression: a long route where pos is at the origin and one near-destination leg's bearing roughly aligns with the bearing from that leg's start to pos. Old `findPassedIndex` would return a high index; new `advancePassedIndexWindowed` returns -1 (or 0 if directly on leg [0,1], which is the correct answer).
+- LFPG-shape regression: a long route where pos is at the origin and one near-destination leg's bearing roughly aligns with the bearing from that leg's start to pos. With reach-gating both `findPassedIndex` and `advancePassedIndexWindowed` return -1; the test asserts both.
 - Off-track recovery on the current leg: pos is wide of waypoint `i+1` by 5 nm but past it along-track. With `passedIndex = i`, the windowed advance returns `i+1`. Existing behavior preserved.
 - Forward-only: regardless of pos drift, the function never returns a value below `currentPassedIndex`.
 - Windowed bounds: when `passedIndex = -1`, only legs `[0, 1] .. [1, 2]` are considered. When `passedIndex = waypoints.length - 1`, no legs are considered (returns `passedIndex` unchanged).
+
+`server/src/state/aggregator.test.ts` extended:
+- LFPG-shape regression: `setPlan` called BEFORE telemetry — verifies the windowed per-tick path doesn't misfire.
+- LFPG-shape real-flow regression: telemetry ingested FIRST (MSFS streaming), THEN `setPlan` — verifies the reach-gated `findPassedIndex` seed path doesn't misfire either. Asserts `nextWaypoint?.ident === 'W1'` and `distanceToDestNm > 500`.
 
 ### 4.5 Alternate Chip vertical alignment
 
