@@ -1,26 +1,26 @@
 import { divIcon } from 'leaflet';
-import { Marker, Tooltip } from 'react-leaflet';
+import { Marker, Pane, Tooltip } from 'react-leaflet';
 import { useFlightStore } from '../../store/flight.js';
 
-// 45° arrows in a circle. White fill matches the waypoint marker style; the
-// dark stroke reads against both light and dark map tiles. Slate-700 keeps
-// the markers neutral so they don't compete with origin (teal), destination
-// (rose), alternate (blue), or waypoints (purple).
+// 45° arrows in a small white-filled circle. Sized to match the waypoint
+// markers (~12 px) so they read as part of the same family. The pane below
+// places them under the breadcrumb (overlayPane z-index = 400) so the trail
+// stays the dominant overlay.
 const STROKE = '#334155';
 
 const TOC_GLYPH = `
-  <svg viewBox="0 0 20 20" width="20" height="20" style="display:block;">
-    <circle cx="10" cy="10" r="8" fill="#fff" stroke="${STROKE}" stroke-width="1.5"/>
-    <path d="M6.5 13.5 L13.5 6.5" stroke="${STROKE}" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-    <path d="M9.5 6.5 L13.5 6.5 L13.5 10.5" stroke="${STROKE}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <svg viewBox="0 0 14 14" width="14" height="14" style="display:block;">
+    <circle cx="7" cy="7" r="6" fill="#fff" stroke="${STROKE}" stroke-width="1"/>
+    <path d="M5 9 L9 5" stroke="${STROKE}" stroke-width="1" stroke-linecap="round" fill="none"/>
+    <path d="M7 5 L9 5 L9 7" stroke="${STROKE}" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
   </svg>
 `;
 
 const TOD_GLYPH = `
-  <svg viewBox="0 0 20 20" width="20" height="20" style="display:block;">
-    <circle cx="10" cy="10" r="8" fill="#fff" stroke="${STROKE}" stroke-width="1.5"/>
-    <path d="M6.5 6.5 L13.5 13.5" stroke="${STROKE}" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-    <path d="M9.5 13.5 L13.5 13.5 L13.5 9.5" stroke="${STROKE}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <svg viewBox="0 0 14 14" width="14" height="14" style="display:block;">
+    <circle cx="7" cy="7" r="6" fill="#fff" stroke="${STROKE}" stroke-width="1"/>
+    <path d="M5 5 L9 9" stroke="${STROKE}" stroke-width="1" stroke-linecap="round" fill="none"/>
+    <path d="M7 9 L9 9 L9 7" stroke="${STROKE}" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
   </svg>
 `;
 
@@ -28,8 +28,8 @@ function makeIcon(label: 'TOC' | 'TOD'): ReturnType<typeof divIcon> {
   return divIcon({
     className: 'ff-cruise-point',
     html: label === 'TOC' ? TOC_GLYPH : TOD_GLYPH,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
   });
 }
 
@@ -38,17 +38,30 @@ export function CruisePoints() {
   const tod = useFlightStore((s) => s.state.progress.todPosition);
 
   return (
-    <>
+    // Custom pane with z-index 350, sandwiched between tilePane (200) and
+    // overlayPane (400 — polylines incl. breadcrumb). Tooltip pane (650)
+    // still sits on top so the hover label remains legible.
+    <Pane name="ff-cruise-points" style={{ zIndex: 350 }}>
       {toc && (
-        <Marker position={[toc.lat, toc.lon]} icon={makeIcon('TOC')} interactive>
-          <Tooltip direction="top" offset={[0, -12]}>Top of climb</Tooltip>
+        <Marker
+          position={[toc.lat, toc.lon]}
+          icon={makeIcon('TOC')}
+          pane="ff-cruise-points"
+          interactive
+        >
+          <Tooltip direction="top" offset={[0, -8]}>Top of climb</Tooltip>
         </Marker>
       )}
       {tod && (
-        <Marker position={[tod.lat, tod.lon]} icon={makeIcon('TOD')} interactive>
-          <Tooltip direction="top" offset={[0, -12]}>Top of descent</Tooltip>
+        <Marker
+          position={[tod.lat, tod.lon]}
+          icon={makeIcon('TOD')}
+          pane="ff-cruise-points"
+          interactive
+        >
+          <Tooltip direction="top" offset={[0, -8]}>Top of descent</Tooltip>
         </Marker>
       )}
-    </>
+    </Pane>
   );
 }

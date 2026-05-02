@@ -2,31 +2,43 @@ import { Polyline } from 'react-leaflet';
 import { useFlightStore } from '../../store/flight.js';
 import { altitudeToColor } from '../../lib/altitudePalette.js';
 
+// Bucket altitude in 2000-ft steps so consecutive samples in the same band
+// share a single multi-point polyline. Each polyline benefits from Leaflet's
+// internal smoothing (no kinks at sample joints), and the 2000-ft step keeps
+// color transitions small enough that the bucketed gradient still reads as
+// continuous. Typical flight: ~30-40 polylines.
+const BUCKET_FT = 2000;
+
 export function BreadcrumbTrail() {
   const crumbs = useFlightStore((s) => s.state.breadcrumb);
   if (crumbs.length < 2) return null;
 
-  // One polyline per pair of consecutive samples so the color fades smoothly
-  // along the trail. Segment color comes from the average altitude of the
-  // pair, interpolated against the palette stops. Breadcrumbs are emitted at
-  // most every 5 s (or on heading change), so a 90-min flight produces a few
-  // hundred segments — fine for Leaflet's SVG renderer.
+  const segments: Array<{ bucket: number; color: string; points: [number, number][] }> = [];
+  let current: { bucket: number; color: string; points: [number, number][] } | null = null;
+  for (let i = 0; i < crumbs.length; i++) {
+    const c = crumbs[i]!;
+    const bucket = Math.floor(c.altMsl / BUCKET_FT);
+    if (!current || current.bucket !== bucket) {
+      // Color the bucket from the altitude at its centre so adjacent buckets
+      // differ by one BUCKET_FT step in the interpolation domain — a small,
+      // even visual gradation.
+      const color = altitudeToColor((bucket + 0.5) * BUCKET_FT);
+      const prev = i > 0 ? crumbs[i - 1]! : null;
+      current = { bucket, color, points: prev ? [[prev.lat, prev.lon]] : [] };
+      segments.push(current);
+    }
+    current.points.push([c.lat, c.lon]);
+  }
+
   return (
     <>
-      {crumbs.slice(1).map((c, i) => {
-        const prev = crumbs[i]!;
-        const avgAlt = (prev.altMsl + c.altMsl) / 2;
-        return (
-          <Polyline
-            key={i}
-            positions={[
-              [prev.lat, prev.lon],
-              [c.lat, c.lon],
-            ]}
-            pathOptions={{ color: altitudeToColor(avgAlt), weight: 3 }}
-          />
-        );
-      })}
+      {segments.map((seg, idx) => (
+        <Polyline
+          key={idx}
+          positions={seg.points}
+          pathOptions={{ color: seg.color, weight: 3 }}
+        />
+      ))}
     </>
   );
 }
