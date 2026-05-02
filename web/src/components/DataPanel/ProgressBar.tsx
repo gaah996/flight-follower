@@ -19,32 +19,43 @@ type Props = {
 };
 
 function CruiseTick({ pct, label }: { pct: number; label: string }) {
+  // Absolute positioning lives on the OUTER wrapper so the Tooltip trigger's
+  // bounding rect (in viewport coords) lands at the marker's location. If
+  // we put position:absolute on the trigger itself, HeroUI's overlay
+  // resolution falls back to the parent (the bar) and the tooltip pops up
+  // at the bar's start instead of next to the marker.
   return (
-    <Tooltip>
-      <TooltipTrigger>
-        {/* 8 px transparent hit-area centred on the tick so hover/click is
-            forgiving even though the visible line is only 1 px wide. */}
-        <div
-          className="absolute"
-          style={{
-            left: `${pct * 100}%`,
-            top: '-3px',
-            bottom: '-3px',
-            width: 8,
-            transform: 'translateX(-50%)',
-          }}
-        >
+    <div
+      className="absolute"
+      style={{
+        left: `${pct * 100}%`,
+        top: '-3px',
+        bottom: '-3px',
+        transform: 'translateX(-50%)',
+      }}
+    >
+      <Tooltip>
+        <TooltipTrigger>
+          {/* 8 px transparent hit-area; the visible 1 px dashed line sits
+              centred inside it so hover/click is forgiving. */}
           <div
-            style={{
-              height: '100%',
-              marginLeft: 'calc(50% - 0.5px)',
-              borderLeft: '1px dashed var(--ff-fg)',
-            }}
-          />
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
+            aria-label={label}
+            style={{ width: 8, height: '100%', position: 'relative' }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                left: 'calc(50% - 0.5px)',
+                top: 0,
+                bottom: 0,
+                borderLeft: '1px dashed var(--ff-fg)',
+              }}
+            />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>{label}</TooltipContent>
+      </Tooltip>
+    </div>
   );
 }
 
