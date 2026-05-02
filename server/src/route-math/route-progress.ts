@@ -55,3 +55,49 @@ export function routeRemainingNm(
 
   return currentLegRemainder + restNm;
 }
+
+/**
+ * Cumulative route distance from origin to a point that lies on the planned
+ * route, summed along the legs `[origin, ...waypoints, destination]`.
+ * Handles three cases:
+ *   - Point matches a leg endpoint: returns the cumulative distance to that
+ *     endpoint exactly.
+ *   - Point lies on a leg interior (along-track in (0, legNm)): returns
+ *     cumulative-to-leg-start + along-track.
+ *   - Point isn't on any leg (within tolerance): returns null.
+ *
+ * Used to place TOC/TOD ticks consistently with the route-following total,
+ * including the case where TOC/TOD is an interpolated position from the
+ * altitude-scan fallback (not a named waypoint).
+ */
+export function routeDistanceFromOriginNm(
+  point: LatLon,
+  plan: FlightPlan,
+): number | null {
+  const combined: LatLon[] = [
+    { lat: plan.origin.lat, lon: plan.origin.lon },
+    ...plan.waypoints.map((w) => ({ lat: w.lat, lon: w.lon })),
+    { lat: plan.destination.lat, lon: plan.destination.lon },
+  ];
+  const ENDPOINT_MATCH_NM = 0.01; // ~60 m
+  let cum = 0;
+  for (let i = 0; i < combined.length - 1; i++) {
+    const a = combined[i]!;
+    const b = combined[i + 1]!;
+    const legNm = haversineNm(a.lat, a.lon, b.lat, b.lon);
+    if (haversineNm(point.lat, point.lon, a.lat, a.lon) < ENDPOINT_MATCH_NM) {
+      return cum;
+    }
+    if (haversineNm(point.lat, point.lon, b.lat, b.lon) < ENDPOINT_MATCH_NM) {
+      return cum + legNm;
+    }
+    if (legNm > 0) {
+      const along = alongTrackNm(point, a, b);
+      if (along > 0 && along < legNm) {
+        return cum + along;
+      }
+    }
+    cum += legNm;
+  }
+  return null;
+}

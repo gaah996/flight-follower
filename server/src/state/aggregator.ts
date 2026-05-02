@@ -1,9 +1,8 @@
 import { EventEmitter } from 'node:events';
 import type { FlightPlan, FlightProgress, FlightState, RawTelemetry } from '@ff/shared';
-import { haversineNm } from '../route-math/distance.js';
-import { advancePassedIndex, advancePassedIndexWindowed, alongTrackNm, distanceToWaypointNm, eteSeconds, findPassedIndex } from '../route-math/progress.js';
+import { advancePassedIndex, advancePassedIndexWindowed, distanceToWaypointNm, eteSeconds, findPassedIndex } from '../route-math/progress.js';
 import { findTOC, findTOD } from '../route-math/cruise-points.js';
-import { routeRemainingNm } from '../route-math/route-progress.js';
+import { routeDistanceFromOriginNm, routeRemainingNm } from '../route-math/route-progress.js';
 
 const BREADCRUMB_INTERVAL_MS = 5000;
 const HEADING_DELTA_DEG = 2;
@@ -18,6 +17,8 @@ const EMPTY_PROGRESS: FlightProgress = {
   flightTimeSec: null,
   tocPosition: null,
   todPosition: null,
+  tocAlongRouteNm: null,
+  todAlongRouteNm: null,
   eteToTocSec: null,
   eteToTodSec: null,
 };
@@ -125,11 +126,17 @@ export class Aggregator extends EventEmitter {
     if (t == null) {
       // Surface TOC/TOD positions as soon as a plan loads, even before any
       // telemetry has arrived (lets the map markers render immediately).
+      const tocPosition = findTOC(plan.waypoints, plan.cruiseAltitudeFt);
+      const todPosition = findTOD(plan.waypoints, plan.cruiseAltitudeFt);
       return {
         ...EMPTY_PROGRESS,
         flightTimeSec,
-        tocPosition: findTOC(plan.waypoints, plan.cruiseAltitudeFt),
-        todPosition: findTOD(plan.waypoints, plan.cruiseAltitudeFt),
+        tocPosition,
+        todPosition,
+        tocAlongRouteNm:
+          tocPosition == null ? null : routeDistanceFromOriginNm(tocPosition, plan),
+        todAlongRouteNm:
+          todPosition == null ? null : routeDistanceFromOriginNm(todPosition, plan),
       };
     }
     // Two complementary advancement paths, both forward-only via Math.max:
@@ -161,26 +168,43 @@ export class Aggregator extends EventEmitter {
 
     const tocPosition = findTOC(plan.waypoints, plan.cruiseAltitudeFt);
     const todPosition = findTOD(plan.waypoints, plan.cruiseAltitudeFt);
-    const distToToc =
-      tocPosition == null
-        ? null
-        : haversineNm(t.position.lat, t.position.lon, tocPosition.lat, tocPosition.lon);
-    const distToTod =
-      todPosition == null
-        ? null
-        : haversineNm(t.position.lat, t.position.lon, todPosition.lat, todPosition.lon);
+    const tocAlongRouteNm =
+      tocPosition == null ? null : routeDistanceFromOriginNm(tocPosition, plan);
+    const todAlongRouteNm =
+      todPosition == null ? null : routeDistanceFromOriginNm(todPosition, plan);
 
-    // Detect "past TOC/TOD" via along-track on the origin → destination axis.
-    // Once past, suppress the ETE so the Clock card hops to the next phase
-    // (TOC → TOD → null → fall-back). Marker positions stay non-null per
-    // spec § 4.2 ("markers stay visible for the entire flight").
-    const aircraftAlong = alongTrackNm(t.position, plan.origin, plan.destination);
-    const tocAlong =
-      tocPosition == null ? null : alongTrackNm(tocPosition, plan.origin, plan.destination);
-    const todAlong =
-      todPosition == null ? null : alongTrackNm(todPosition, plan.origin, plan.destination);
-    const isPastToc = tocAlong != null && aircraftAlong >= tocAlong;
-    const isPastTod = todAlong != null && aircraftAlong >= todAlong;
+    // Aircraft's cumulative route-from-origin distance: total route minus
+    // route-following remaining. Used both for past-TOC/TOD detection and
+    // as the numerator denominator pair for route-following ETEs. Falls
+    // back to the destination's cumulative-from-origin (which is the
+    // leg-sum of the full route) when plan.routeTotalDistanceNm isn't set
+    // — keeps test fixtures and any non-Simbrief plan source working.
+    const routeTotal =
+      plan.routeTotalDistanceNm ??
+      routeDistanceFromOriginNm(
+        { lat: plan.destination.lat, lon: plan.destination.lon },
+        plan,
+      );
+    const aircraftRouteFromOriginNm =
+      routeTotal != null ? Math.max(0, routeTotal - distDest) : null;
+
+    const isPastToc =
+      tocAlongRouteNm != null &&
+      aircraftRouteFromOriginNm != null &&
+      aircraftRouteFromOriginNm >= tocAlongRouteNm;
+    const isPastTod =
+      todAlongRouteNm != null &&
+      aircraftRouteFromOriginNm != null &&
+      aircraftRouteFromOriginNm >= todAlongRouteNm;
+
+    const remainingToTocNm =
+      tocAlongRouteNm != null && aircraftRouteFromOriginNm != null
+        ? Math.max(0, tocAlongRouteNm - aircraftRouteFromOriginNm)
+        : null;
+    const remainingToTodNm =
+      todAlongRouteNm != null && aircraftRouteFromOriginNm != null
+        ? Math.max(0, todAlongRouteNm - aircraftRouteFromOriginNm)
+        : null;
 
     return {
       nextWaypoint: nextWp,
@@ -191,8 +215,10 @@ export class Aggregator extends EventEmitter {
       flightTimeSec,
       tocPosition,
       todPosition,
-      eteToTocSec: isPastToc || distToToc == null ? null : eteSeconds(distToToc, gs),
-      eteToTodSec: isPastTod || distToTod == null ? null : eteSeconds(distToTod, gs),
+      tocAlongRouteNm,
+      todAlongRouteNm,
+      eteToTocSec: isPastToc || remainingToTocNm == null ? null : eteSeconds(remainingToTocNm, gs),
+      eteToTodSec: isPastTod || remainingToTodNm == null ? null : eteSeconds(remainingToTodNm, gs),
     };
   }
 

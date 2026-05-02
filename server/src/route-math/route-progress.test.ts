@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FlightPlan } from '@ff/shared';
-import { routeRemainingNm } from './route-progress.js';
+import { routeDistanceFromOriginNm, routeRemainingNm } from './route-progress.js';
 
 const planSingleLeg: FlightPlan = {
   fetchedAt: 0,
@@ -91,5 +91,46 @@ describe('routeRemainingNm', () => {
       ],
     };
     expect(() => routeRemainingNm({ lat: 0, lon: 0 }, planWithDup, -1)).not.toThrow();
+  });
+});
+
+describe('routeDistanceFromOriginNm', () => {
+  it('returns 0 when point is at the origin', () => {
+    expect(routeDistanceFromOriginNm({ lat: 0, lon: 0 }, planMultiLeg)).toBeCloseTo(0, 1);
+  });
+
+  it('returns the full route length when point is at the destination', () => {
+    // 10° at the equator ≈ 600 nm.
+    const r = routeDistanceFromOriginNm({ lat: 0, lon: 10 }, planMultiLeg);
+    expect(r).toBeGreaterThan(595);
+    expect(r).toBeLessThan(605);
+  });
+
+  it('returns cumulative distance to a named waypoint endpoint', () => {
+    // W2 is at lon 5; legs origin→W1 (2°) + W1→W2 (3°) = 5° ≈ 300 nm.
+    const r = routeDistanceFromOriginNm({ lat: 0, lon: 5 }, planMultiLeg);
+    expect(r).toBeGreaterThan(298);
+    expect(r).toBeLessThan(302);
+  });
+
+  it('returns leg-interior distance for a point between waypoints', () => {
+    // Point at lon 3.5 (mid-leg between W1@2 and W2@5):
+    // origin→W1 = 2° (120 nm) + along-track on W1→W2 = 1.5° (90 nm) = 210 nm.
+    const r = routeDistanceFromOriginNm({ lat: 0, lon: 3.5 }, planMultiLeg);
+    expect(r).toBeGreaterThan(205);
+    expect(r).toBeLessThan(215);
+  });
+
+  it('returns null when point is not on any leg (within tolerance)', () => {
+    // Point far north of the equatorial route.
+    const r = routeDistanceFromOriginNm({ lat: 30, lon: 5 }, planMultiLeg);
+    expect(r).toBeNull();
+  });
+
+  it('handles single-leg plan (no intermediate waypoints)', () => {
+    // Point at lon 5 on a 10° single-leg route: along-track = 5° ≈ 300 nm.
+    const r = routeDistanceFromOriginNm({ lat: 0, lon: 5 }, planSingleLeg);
+    expect(r).toBeGreaterThan(298);
+    expect(r).toBeLessThan(302);
   });
 });

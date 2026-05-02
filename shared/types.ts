@@ -75,6 +75,16 @@ export type FlightProgress = {
   flightTimeSec: number | null;
   tocPosition: LatLon | null;
   todPosition: LatLon | null;
+  /**
+   * Route-following distance from origin to TOC, summed along the planned
+   * legs `[origin, ...waypoints, destination]`. Used by ProgressBar to place
+   * the TOC tick consistently with the route-following progress fill, and
+   * by the aggregator to compute eteToTocSec as a route-following remainder
+   * rather than a great-circle straight line. Null when tocPosition is null.
+   */
+  tocAlongRouteNm: number | null;
+  /** Route-following distance from origin to TOD; see tocAlongRouteNm. */
+  todAlongRouteNm: number | null;
   eteToTocSec: number | null;
   eteToTodSec: number | null;
 };
