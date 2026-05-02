@@ -81,9 +81,11 @@ function AltitudeProfileGlyph({ plan, progress }: { plan: FlightPlan; progress: 
       }))
     : [];
 
-  // Progress overlay: translucent veil over the unflown portion. As the
-  // flight progresses, the veil shrinks toward the destination edge.
+  // Reveal-as-you-fly: render the gradient stroke clipped to the flown
+  // portion and a faint muted underlay across the full path. The unflown
+  // side reads as "yet to come" without a darkened overlay box.
   const flownX = PAD + Math.max(0, Math.min(1, progress)) * (W - 2 * PAD);
+  const clipId = `ff-glyph-clip-${plan.fetchedAt}`;
 
   return (
     <svg
@@ -93,8 +95,8 @@ function AltitudeProfileGlyph({ plan, progress }: { plan: FlightPlan; progress: 
       aria-hidden
       style={{ color: 'var(--ff-fg-muted)' }}
     >
-      {useGradient && (
-        <defs>
+      <defs>
+        {useGradient && (
           <linearGradient
             id={gradientId}
             gradientUnits="userSpaceOnUse"
@@ -107,8 +109,23 @@ function AltitudeProfileGlyph({ plan, progress }: { plan: FlightPlan; progress: 
               <stop key={i} offset={`${s.offset}%`} stopColor={s.color} />
             ))}
           </linearGradient>
-        </defs>
-      )}
+        )}
+        <clipPath id={clipId}>
+          <rect x={0} y={0} width={flownX} height={H} />
+        </clipPath>
+      </defs>
+      {/* Unflown underlay — full path, faint muted gray. */}
+      <polyline
+        points={polylinePoints}
+        fill="none"
+        stroke="currentColor"
+        strokeOpacity={0.3}
+        strokeWidth={1}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Flown overlay — gradient (or solid currentColor for generic trapezoid),
+          clipped to the flown rect. */}
       <polyline
         points={polylinePoints}
         fill="none"
@@ -116,16 +133,7 @@ function AltitudeProfileGlyph({ plan, progress }: { plan: FlightPlan; progress: 
         strokeWidth={1}
         strokeLinecap="round"
         strokeLinejoin="round"
-      />
-      {/* Translucent veil over the unflown portion. Shrinks toward
-          destination as the flight progresses. */}
-      <rect
-        x={flownX}
-        y={0}
-        width={W - flownX}
-        height={H}
-        fill="var(--ff-bg)"
-        opacity={0.4}
+        clipPath={`url(#${clipId})`}
       />
     </svg>
   );

@@ -62,14 +62,15 @@ export function TripCard() {
   // Live ETA: derived from progress.eteToDestSec when available; otherwise
   // the scheduled STA. Label distinguishes the two so the user knows which
   // is on screen.
+  // ETA is the *live* value only — derived from progress.eteToDestSec when
+  // available; falls back to a dash when not. The scheduled STA is already
+  // shown in the header so we don't show it twice.
   const liveEtaMs =
     progress.eteToDestSec != null ? now + progress.eteToDestSec * 1000 : null;
-  const etaMs = liveEtaMs ?? plan.scheduledIn ?? null;
-  const etaLabel = liveEtaMs != null ? 'live' : plan.scheduledIn != null ? 'sched' : null;
 
   const remaining =
     progress.distanceToDestNm != null ? `${fmtNum(progress.distanceToDestNm, 0)} nm` : dash;
-  const eta = etaMs != null ? `${fmtUtcTime(etaMs)}z` : dash;
+  const eta = liveEtaMs != null ? `${fmtUtcTime(liveEtaMs)}z` : dash;
   const etaStatusValue =
     liveEtaMs != null && plan.scheduledIn != null ? etaStatus(liveEtaMs, plan.scheduledIn) : null;
 
@@ -147,14 +148,9 @@ export function TripCard() {
         <Row label="ETE" tooltip="Estimated time enroute (until destination)">
           {fmtDurationTier(progress.eteToDestSec)}
         </Row>
-        <Row label="ETA" tooltip="Estimated time of arrival (UTC)">
+        <Row label="ETA" tooltip="Estimated time of arrival (live, UTC)">
           <span className="inline-flex items-center gap-1.5">
             {eta}
-            {etaLabel && (
-              <Chip size="sm" variant="soft" color={etaLabel === 'live' ? 'accent' : 'default'}>
-                <Chip.Label>{etaLabel}</Chip.Label>
-              </Chip>
-            )}
             {etaStatusValue && (
               <Tooltip>
                 <TooltipTrigger>
@@ -175,15 +171,7 @@ export function TripCard() {
               className="flex items-center gap-1.5"
               style={{ fontSize: 12, color: 'var(--ff-fg-muted)', fontFamily: 'ui-monospace, monospace' }}
             >
-              <button
-                type="button"
-                onClick={() => step(-1)}
-                aria-label="Previous waypoint"
-                className="px-1 cursor-pointer bg-transparent border-0 text-current"
-              >
-                ◀
-              </button>
-              <span>
+              <span className="flex-1 min-w-0 truncate">
                 Next: {active.waypoint?.ident ?? progress.nextWaypoint?.ident}
                 {(active.distanceNm ?? progress.distanceToNextNm) != null && (
                   <> · {fmtNum(active.distanceNm ?? progress.distanceToNextNm!, 1)} nm</>
@@ -192,6 +180,14 @@ export function TripCard() {
                   <> · {fmtDurationTier(active.eteSec ?? progress.eteToNextSec)}</>
                 )}
               </span>
+              <button
+                type="button"
+                onClick={() => step(-1)}
+                aria-label="Previous waypoint"
+                className="px-1 cursor-pointer bg-transparent border-0 text-current"
+              >
+                ◀
+              </button>
               <button
                 type="button"
                 onClick={() => step(1)}
@@ -204,10 +200,12 @@ export function TripCard() {
                 <button
                   type="button"
                   onClick={() => setManualNextIndex(null)}
-                  className="px-1 cursor-pointer bg-transparent border-0 underline"
+                  aria-label="Resume auto-tracking"
+                  title="Resume auto-tracking"
+                  className="px-1 cursor-pointer bg-transparent border-0"
                   style={{ color: 'var(--ff-accent)' }}
                 >
-                  auto
+                  ↺
                 </button>
               )}
             </div>

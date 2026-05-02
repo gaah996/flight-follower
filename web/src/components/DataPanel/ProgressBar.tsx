@@ -62,52 +62,56 @@ export function ProgressBar({ plan, progress }: Props) {
 
   return (
     <div
-      className="relative w-full h-1.5 my-2 rounded-full"
-      style={{ background: 'var(--ff-bg-elevated)' }}
+      className="relative w-full h-2 my-2 rounded-full overflow-visible"
+      style={{
+        background: 'var(--ff-bg-elevated)',
+        border: '1px solid var(--ff-border)',
+      }}
     >
-      {/* filled portion (origin → aircraft) */}
+      {/* Filled portion (origin → aircraft). Sits inside the border. */}
       <div
-        className="absolute left-0 top-0 h-full rounded-full"
+        className="absolute left-0 top-0 bottom-0 rounded-full"
         style={{ width: `${aircraftPct * 100}%`, background: 'var(--ff-accent)' }}
       />
 
-      {/* origin tick (filled circle, left edge) */}
-      <div
-        className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full"
-        style={{ left: 0, background: 'var(--ff-fg-muted)' }}
-      />
-
-      {/* destination tick (filled circle, right edge) */}
-      <div
-        className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full"
-        style={{ left: '100%', transform: 'translate(-100%, -50%)', background: 'var(--ff-fg-muted)' }}
-      />
-
-      {/* TOC tick */}
+      {/* TOC: vertical dashed line crossing the bar. Extends slightly above
+          and below so it reads clearly against the filled / unfilled regions. */}
       {tocPct != null && (
         <div
-          className="absolute top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full"
-          style={{ left: `${tocPct * 100}%`, background: 'var(--ff-fg)' }}
+          className="absolute"
+          style={{
+            left: `${tocPct * 100}%`,
+            top: '-3px',
+            bottom: '-3px',
+            width: 0,
+            borderLeft: '1px dashed var(--ff-fg)',
+          }}
           title="Top of climb"
         />
       )}
 
-      {/* TOD tick */}
+      {/* TOD: same treatment as TOC. */}
       {todPct != null && (
         <div
-          className="absolute top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full"
-          style={{ left: `${todPct * 100}%`, background: 'var(--ff-fg)' }}
+          className="absolute"
+          style={{
+            left: `${todPct * 100}%`,
+            top: '-3px',
+            bottom: '-3px',
+            width: 0,
+            borderLeft: '1px dashed var(--ff-fg)',
+          }}
           title="Top of descent"
         />
       )}
 
-      {/* aircraft tick (hollow ring, accent color) */}
+      {/* Aircraft tick (hollow ring, accent color). Stays on top. */}
       <div
         className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
         style={{
           left: `${aircraftPct * 100}%`,
           transform: 'translate(-50%, -50%)',
-          background: 'transparent',
+          background: 'var(--ff-bg-elevated)',
           border: '2px solid var(--ff-accent)',
         }}
       />
