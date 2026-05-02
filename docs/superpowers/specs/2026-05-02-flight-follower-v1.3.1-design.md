@@ -149,7 +149,12 @@ Edge cases:
 
 `computeProgress` in `state/aggregator.ts` calls `routeRemainingNm(t.position, plan, this.passedIndex)` and assigns the result to `distanceToDestNm`. The existing line that computes `haversineNm(t.position, plan.destination)` is removed.
 
-**`plan.totalDistanceNm` becomes leg-sum too.** The Simbrief OFP exposes `general.air_distance` and `general.route_distance`, both of which include wind/route adjustments and run a few percent higher than the geometric haversine sum of the navlog waypoints. Mixing them with the new leg-following `distanceToDestNm` produces a non-zero progress percentage at the origin (~3.5% on the LFPG → LEPA fixture). v1.3.1 changes `simbrief/parser.ts` to compute `totalDistanceNm` itself as the haversine sum of `[origin, ...waypoints, destination]`. `air_distance` and `route_distance` are removed from the parser schema since they're no longer used. The displayed total in FlightPlanCard's "Distance" row shows the same number the progress math uses; progress reads exactly 0% at the origin and exactly 100% at the destination.
+**Two distance fields on `FlightPlan`.** The Simbrief OFP exposes `general.air_distance` (and `route_distance` as fallback), which includes wind/route adjustments and runs a few percent higher than the geometric haversine sum of the navlog waypoints. Using the OFP value as the denominator alongside the new leg-following `distanceToDestNm` produces a non-zero progress percentage at the origin (~3.5% on the LFPG → LEPA fixture). The user wants the FlightPlanCard "Distance" row to stay true to the pilot's source of truth (the OFP), so v1.3.1 carries **both** values:
+
+- `plan.totalDistanceNm` (existing) — Simbrief's `air_distance` with `route_distance` fallback. Displayed in FlightPlanCard's "Distance" row. May be `undefined` if the OFP omits both.
+- `plan.routeTotalDistanceNm` (new) — haversine sum of legs `[origin, ...waypoints, destination]`. Used as the denominator for progress percentages in `ProgressBar` and the FlightPlanCard glyph reveal. Always defined for plans parsed by `parseSimbriefOfp`.
+
+`simbrief/parser.ts` populates both. JSDoc on `FlightPlan` in `shared/types.ts` distinguishes them. TripCard's "Remaining" row still reads `progress.distanceToDestNm` (route-following remainder, not a total — unchanged).
 
 **Type comment.** `shared/types.ts` JSDoc on `FlightProgress.distanceToDestNm` updated to: *"Route-following distance to destination in nautical miles: along-track remainder of the current leg + sum of remaining leg distances."* No type-shape change.
 
