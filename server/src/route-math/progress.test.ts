@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { eteSeconds, distanceToWaypointNm, advancePassedIndex, findPassedIndex } from './progress.js';
+import { eteSeconds, distanceToWaypointNm, advancePassedIndex, findPassedIndex, alongTrackNm } from './progress.js';
 
 const wpts = [
   { ident: 'A', lat: 0, lon: 0 },
@@ -52,21 +52,48 @@ describe('advancePassedIndex', () => {
   });
 });
 
+describe('alongTrackNm', () => {
+  it('is 0 when pos coincides with from', () => {
+    expect(alongTrackNm({ lat: 0, lon: 0 }, { lat: 0, lon: 0 }, { lat: 0, lon: 1 })).toBeCloseTo(0, 3);
+  });
+
+  it('equals leg length when pos is at to', () => {
+    const along = alongTrackNm({ lat: 0, lon: 1 }, { lat: 0, lon: 0 }, { lat: 0, lon: 1 });
+    expect(along).toBeGreaterThan(59);
+    expect(along).toBeLessThan(61);
+  });
+
+  it('exceeds leg length when pos projects past to', () => {
+    const along = alongTrackNm({ lat: 0, lon: 1.5 }, { lat: 0, lon: 0 }, { lat: 0, lon: 1 });
+    expect(along).toBeGreaterThan(89); // ~1.5° at equator
+  });
+
+  it('is negative when pos projects behind from', () => {
+    expect(alongTrackNm({ lat: 0, lon: -0.5 }, { lat: 0, lon: 0 }, { lat: 0, lon: 1 })).toBeLessThan(0);
+  });
+});
+
 describe('findPassedIndex', () => {
   it('returns -1 when the aircraft is still approaching the first waypoint', () => {
-    // Aircraft south of A; closer to A than to B.
+    // Aircraft south of A; not past A on the [A,B] leg.
     expect(findPassedIndex({ lat: -1, lon: 0 }, wpts)).toBe(-1);
   });
 
   it('returns 0 when the aircraft is between the first and second waypoints', () => {
-    // Aircraft at lon 0.6 on the equator: closer to B (lon 1) than to A (lon 0)
-    // and closer to B than to C (lon 2).
+    // Aircraft at lon 0.6 on the equator: along-track on [A,B] is positive
+    // but less than the leg length.
     expect(findPassedIndex({ lat: 0, lon: 0.6 }, wpts)).toBe(0);
   });
 
+  it('returns N when the aircraft has just passed waypoint N (close but on far side)', () => {
+    // Edge case the original "closer to N+1 than N" heuristic missed: at
+    // lon 1.05, the aircraft is closer to B (lon 1) than to C (lon 2), but
+    // along-track on [A,B] exceeds the leg length, so B has been passed.
+    expect(findPassedIndex({ lat: 0, lon: 1.05 }, wpts)).toBe(1);
+  });
+
   it('returns the last index when the aircraft is past the final waypoint', () => {
-    // Aircraft at lon 3: closer to C (lon 2) than to B (lon 1).
-    expect(findPassedIndex({ lat: 0, lon: 3 }, wpts)).toBe(1);
+    expect(findPassedIndex({ lat: 0, lon: 3 }, wpts)).toBe(2);
   });
 
   it('returns -1 for empty waypoint list', () => {
