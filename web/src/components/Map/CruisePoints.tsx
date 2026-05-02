@@ -38,10 +38,11 @@ export function CruisePoints() {
   const tod = useFlightStore((s) => s.state.progress.todPosition);
 
   return (
-    // Custom pane with z-index 350, sandwiched between tilePane (200) and
-    // overlayPane (400 — polylines incl. breadcrumb). Tooltip pane (650)
-    // still sits on top so the hover label remains legible.
-    <Pane name="ff-cruise-points" style={{ zIndex: 350 }}>
+    // Custom pane at z=405, just above overlayPane (400 — plan polyline +
+    // waypoint markers). The breadcrumb sits in ff-breadcrumb (410) above
+    // these, and the aircraft + tooltips remain on top via their default
+    // markerPane (600) / tooltipPane (650).
+    <Pane name="ff-cruise-points" style={{ zIndex: 405 }}>
       {toc && (
         <Marker
           position={[toc.lat, toc.lon]}

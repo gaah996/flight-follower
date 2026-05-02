@@ -1,4 +1,4 @@
-import { Polyline } from 'react-leaflet';
+import { Pane, Polyline } from 'react-leaflet';
 import { useFlightStore } from '../../store/flight.js';
 import { altitudeToColor } from '../../lib/altitudePalette.js';
 
@@ -8,6 +8,11 @@ import { altitudeToColor } from '../../lib/altitudePalette.js';
 // color transitions small enough that the bucketed gradient still reads as
 // continuous. Typical flight: ~30-40 polylines.
 const BUCKET_FT = 2000;
+
+// Lives in its own pane at z=410, just above the cruise-points pane (405)
+// so the actual flight trail draws over the planned-vs-actual markers, but
+// below the aircraft (markerPane = 600).
+const PANE_NAME = 'ff-breadcrumb';
 
 export function BreadcrumbTrail() {
   const crumbs = useFlightStore((s) => s.state.breadcrumb);
@@ -31,7 +36,7 @@ export function BreadcrumbTrail() {
   }
 
   return (
-    <>
+    <Pane name={PANE_NAME} style={{ zIndex: 410 }}>
       {segments.map((seg, idx) => (
         <Polyline
           key={idx}
@@ -39,6 +44,6 @@ export function BreadcrumbTrail() {
           pathOptions={{ color: seg.color, weight: 3 }}
         />
       ))}
-    </>
+    </Pane>
   );
 }
