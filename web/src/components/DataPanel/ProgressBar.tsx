@@ -18,36 +18,46 @@ type Props = {
   progress: FlightProgress;
 };
 
+// Visible line + hit-area is 16 px tall (matches the bar's 10 px outer plus
+// the 3 px overhang on each side). Hardcoded because the height: 100%
+// chain doesn't survive HeroUI's Tooltip wrapping.
+const TICK_HEIGHT = 16;
+const TICK_WIDTH = 8;
+
 function CruiseTick({ pct, label }: { pct: number; label: string }) {
   // Absolute positioning lives on the OUTER wrapper so the Tooltip trigger's
-  // bounding rect (in viewport coords) lands at the marker's location. If
-  // we put position:absolute on the trigger itself, HeroUI's overlay
-  // resolution falls back to the parent (the bar) and the tooltip pops up
-  // at the bar's start instead of next to the marker.
+  // bounding rect lands at the marker's location. If we put position:absolute
+  // on the trigger itself, HeroUI's overlay resolution falls back to the
+  // parent (the bar) and the tooltip pops up at the bar's start.
   return (
     <div
       className="absolute"
       style={{
         left: `${pct * 100}%`,
-        top: '-3px',
-        bottom: '-3px',
-        transform: 'translateX(-50%)',
+        top: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: TICK_WIDTH,
+        height: TICK_HEIGHT,
       }}
     >
       <Tooltip>
         <TooltipTrigger>
-          {/* 8 px transparent hit-area; the visible 1 px dashed line sits
-              centred inside it so hover/click is forgiving. */}
           <div
             aria-label={label}
-            style={{ width: 8, height: '100%', position: 'relative' }}
+            style={{
+              width: TICK_WIDTH,
+              height: TICK_HEIGHT,
+              position: 'relative',
+              cursor: 'default',
+            }}
           >
             <div
               style={{
                 position: 'absolute',
-                left: 'calc(50% - 0.5px)',
+                left: TICK_WIDTH / 2,
                 top: 0,
                 bottom: 0,
+                width: 0,
                 borderLeft: '1px dashed var(--ff-fg)',
               }}
             />
