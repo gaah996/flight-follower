@@ -149,6 +149,8 @@ Edge cases:
 
 `computeProgress` in `state/aggregator.ts` calls `routeRemainingNm(t.position, plan, this.passedIndex)` and assigns the result to `distanceToDestNm`. The existing line that computes `haversineNm(t.position, plan.destination)` is removed.
 
+**`plan.totalDistanceNm` becomes leg-sum too.** The Simbrief OFP exposes `general.air_distance` and `general.route_distance`, both of which include wind/route adjustments and run a few percent higher than the geometric haversine sum of the navlog waypoints. Mixing them with the new leg-following `distanceToDestNm` produces a non-zero progress percentage at the origin (~3.5% on the LFPG → LEPA fixture). v1.3.1 changes `simbrief/parser.ts` to compute `totalDistanceNm` itself as the haversine sum of `[origin, ...waypoints, destination]`. `air_distance` and `route_distance` are removed from the parser schema since they're no longer used. The displayed total in FlightPlanCard's "Distance" row shows the same number the progress math uses; progress reads exactly 0% at the origin and exactly 100% at the destination.
+
 **Type comment.** `shared/types.ts` JSDoc on `FlightProgress.distanceToDestNm` updated to: *"Route-following distance to destination in nautical miles: along-track remainder of the current leg + sum of remaining leg distances."* No type-shape change.
 
 **Tests.** `server/src/route-math/route-progress.test.ts`:
@@ -175,7 +177,7 @@ A pure cross-track gate doesn't fix it — LFPG is roughly on-axis, so cross-tra
 
 1. **Replace `findPassedIndex` with closest-leg projection.** The full-scan along-track algorithm (project pos onto every leg, take the max passed index) misfires whenever any leg's bearing aligns with the bearing from its start back to pos. A 200 nm reach-gate-in-loop is insufficient because real navlogs have multiple SID and early-enroute legs within 200 nm of the origin, and the cumulative max-of-misfires across those legs still jumps the cursor (LFPG → LEPA "next = RBT instead of DE27R" reproduction). The semantically correct algorithm: find the single leg whose nearest endpoint is closest to pos, then project only onto that leg. A 200 nm constant `FIND_PASSED_INDEX_REACH_NM` survives as a defensive sanity gate on the best leg's distance to pos (returns `-1` if the aircraft is nowhere near the route at all). Tie-breaks pick the smaller-index leg, which keeps cursor advancement at a shared waypoint conservative.
 
-2. **New windowed helper for per-tick advancement.**
+2. **New windowed helper for per-tick advancement, also using closest-leg projection.** Per-tick reconciliation projects pos onto only the closest leg in a small window around the current cursor (same algorithm as `findPassedIndex`, just bounded). An earlier "project onto every leg in the window, take Math.max" approach was tried and rejected: it gave the bug 4 chances per tick to misfire and on real navlogs (PG270 → PG290 → PON → RBT, all roughly along the same airway) the cursor still jumped multiple waypoints ahead. Closest-leg-in-window aligns the per-tick path with the plan-load path and limits the misfire surface to a single projection per tick, guarded by `Math.max(currentPassedIndex, candidate)` so advancement remains forward-only. No reach-gate inside the window — the window is itself the constraint.
 
 ```ts
 /**
