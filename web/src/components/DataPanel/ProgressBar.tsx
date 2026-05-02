@@ -1,10 +1,15 @@
-import type { FlightPlan, FlightProgress } from '@ff/shared';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@heroui/react';
+import type { FlightPlan, FlightProgress } from "@ff/shared";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@heroui/react";
 
 const EARTH_RADIUS_NM = 3440.065;
 const toRad = (d: number) => (d * Math.PI) / 180;
 
-function haversineNm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function haversineNm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a =
@@ -18,10 +23,12 @@ type Props = {
   progress: FlightProgress;
 };
 
-// Visible line + hit-area is 16 px tall (matches the bar's 10 px outer plus
-// the 3 px overhang on each side). Hardcoded because the height: 100%
-// chain doesn't survive HeroUI's Tooltip wrapping.
-const TICK_HEIGHT = 16;
+// 14 px tall × 8 px wide hit-area; the visible 1 px dashed line sits in the
+// middle. Tall enough to overhang the 10 px bar by ~2 px on each side so the
+// marker reads as a tick crossing the bar. Hardcoded because the height:
+// 100% chain doesn't survive HeroUI's Tooltip wrapping. JSX order in the
+// parent ensures the tick paints on top of the progress fill.
+const TICK_HEIGHT = 14;
 const TICK_WIDTH = 8;
 
 function CruiseTick({ pct, label }: { pct: number; label: string }) {
@@ -34,12 +41,8 @@ function CruiseTick({ pct, label }: { pct: number; label: string }) {
       className="absolute"
       style={{
         left: `${pct * 100}%`,
-        // Bar is 10 px tall (h-2.5 + 1 px border each side); 16 px tick
-        // centred = 3 px overhang on each side. Use a fixed pixel offset
-        // instead of top:50% + translateY because HeroUI's Tooltip wrapping
-        // breaks the percentage / transform chain.
         top: -3,
-        transform: 'translateX(-50%)',
+        transform: "translateX(-50%)",
         width: TICK_WIDTH,
         height: TICK_HEIGHT,
       }}
@@ -51,18 +54,18 @@ function CruiseTick({ pct, label }: { pct: number; label: string }) {
             style={{
               width: TICK_WIDTH,
               height: TICK_HEIGHT,
-              position: 'relative',
-              cursor: 'default',
+              position: "relative",
+              cursor: "default",
             }}
           >
             <div
               style={{
-                position: 'absolute',
+                position: "absolute",
                 left: TICK_WIDTH / 2,
                 top: 0,
                 bottom: 0,
                 width: 0,
-                borderLeft: '1px dashed var(--ff-fg)',
+                borderLeft: "1px dashed var(--ff-fg-muted)",
               }}
             />
           </div>
@@ -76,7 +79,12 @@ function CruiseTick({ pct, label }: { pct: number; label: string }) {
 export function ProgressBar({ plan, progress }: Props) {
   const totalNm =
     plan.totalDistanceNm ??
-    haversineNm(plan.origin.lat, plan.origin.lon, plan.destination.lat, plan.destination.lon);
+    haversineNm(
+      plan.origin.lat,
+      plan.origin.lon,
+      plan.destination.lat,
+      plan.destination.lon
+    );
   if (totalNm <= 0) return null;
 
   const aircraftPct =
@@ -95,9 +103,9 @@ export function ProgressBar({ plan, progress }: Props) {
               plan.origin.lat,
               plan.origin.lon,
               progress.tocPosition.lat,
-              progress.tocPosition.lon,
-            ) / totalNm,
-          ),
+              progress.tocPosition.lon
+            ) / totalNm
+          )
         );
 
   const todPct =
@@ -111,23 +119,26 @@ export function ProgressBar({ plan, progress }: Props) {
               plan.origin.lat,
               plan.origin.lon,
               progress.todPosition.lat,
-              progress.todPosition.lon,
-            ) / totalNm,
-          ),
+              progress.todPosition.lon
+            ) / totalNm
+          )
         );
 
   return (
     <div
       className="relative w-full h-2.5 my-2 rounded-full"
       style={{
-        background: 'var(--ff-bg-elevated)',
-        border: '1px solid var(--ff-border)',
+        background: "var(--ff-bg-elevated)",
+        border: "1px solid var(--ff-border)",
       }}
     >
       {/* Filled portion (origin → aircraft). Sits inside the border. */}
       <div
         className="absolute left-0 top-0 bottom-0 rounded-full"
-        style={{ width: `${aircraftPct * 100}%`, background: 'var(--ff-accent)' }}
+        style={{
+          width: `${aircraftPct * 100}%`,
+          background: "var(--ff-accent)",
+        }}
       />
 
       {tocPct != null && <CruiseTick pct={tocPct} label="Top of climb" />}
@@ -140,9 +151,9 @@ export function ProgressBar({ plan, progress }: Props) {
         className="absolute top-1/2 w-2.5 h-2.5 rounded-full"
         style={{
           left: `${aircraftPct * 100}%`,
-          transform: 'translate(-50%, -50%)',
-          background: 'var(--ff-bg-elevated)',
-          border: '2px solid var(--ff-accent)',
+          transform: "translate(-50%, -50%)",
+          background: "var(--ff-bg-elevated)",
+          border: "2px solid var(--ff-accent)",
         }}
       />
     </div>
