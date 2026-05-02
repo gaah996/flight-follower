@@ -1,4 +1,5 @@
 import type { FlightPlan, FlightProgress } from '@ff/shared';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@heroui/react';
 
 const EARTH_RADIUS_NM = 3440.065;
 const toRad = (d: number) => (d * Math.PI) / 180;
@@ -16,6 +17,36 @@ type Props = {
   plan: FlightPlan;
   progress: FlightProgress;
 };
+
+function CruiseTick({ pct, label }: { pct: number; label: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger>
+        {/* 8 px transparent hit-area centred on the tick so hover/click is
+            forgiving even though the visible line is only 1 px wide. */}
+        <div
+          className="absolute"
+          style={{
+            left: `${pct * 100}%`,
+            top: '-3px',
+            bottom: '-3px',
+            width: 8,
+            transform: 'translateX(-50%)',
+          }}
+        >
+          <div
+            style={{
+              height: '100%',
+              marginLeft: 'calc(50% - 0.5px)',
+              borderLeft: '1px dashed var(--ff-fg)',
+            }}
+          />
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 export function ProgressBar({ plan, progress }: Props) {
   const totalNm =
@@ -62,7 +93,7 @@ export function ProgressBar({ plan, progress }: Props) {
 
   return (
     <div
-      className="relative w-full h-2 my-2 rounded-full overflow-visible"
+      className="relative w-full h-2.5 my-2 rounded-full"
       style={{
         background: 'var(--ff-bg-elevated)',
         border: '1px solid var(--ff-border)',
@@ -74,40 +105,14 @@ export function ProgressBar({ plan, progress }: Props) {
         style={{ width: `${aircraftPct * 100}%`, background: 'var(--ff-accent)' }}
       />
 
-      {/* TOC: vertical dashed line crossing the bar. Extends slightly above
-          and below so it reads clearly against the filled / unfilled regions. */}
-      {tocPct != null && (
-        <div
-          className="absolute"
-          style={{
-            left: `${tocPct * 100}%`,
-            top: '-3px',
-            bottom: '-3px',
-            width: 0,
-            borderLeft: '1px dashed var(--ff-fg)',
-          }}
-          title="Top of climb"
-        />
-      )}
+      {tocPct != null && <CruiseTick pct={tocPct} label="Top of climb" />}
+      {todPct != null && <CruiseTick pct={todPct} label="Top of descent" />}
 
-      {/* TOD: same treatment as TOC. */}
-      {todPct != null && (
-        <div
-          className="absolute"
-          style={{
-            left: `${todPct * 100}%`,
-            top: '-3px',
-            bottom: '-3px',
-            width: 0,
-            borderLeft: '1px dashed var(--ff-fg)',
-          }}
-          title="Top of descent"
-        />
-      )}
-
-      {/* Aircraft tick (hollow ring, accent color). Stays on top. */}
+      {/* Aircraft tick — same height as the bar so it sits flush, centred on
+          the bar's vertical midline. Solid background masks the gradient
+          fill behind the ring. */}
       <div
-        className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
+        className="absolute top-1/2 w-2.5 h-2.5 rounded-full"
         style={{
           left: `${aircraftPct * 100}%`,
           transform: 'translate(-50%, -50%)',

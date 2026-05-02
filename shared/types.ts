@@ -6,7 +6,7 @@ export type RawTelemetry = {
   altitude: { msl: number; indicated?: number };
   speed: { ground: number; indicated: number; mach: number };
   heading: { magnetic: number; true: number };
-  track: { true: number };
+  track: { magnetic: number };
   verticalSpeed: number;
   wind: { direction: number; speed: number };
   onGround: boolean;

@@ -78,7 +78,7 @@ export function PositionCard() {
             variant="secondary"
             className="rounded-lg py-1 px-2 ml-[-8px] mr-[-8px] text-xs"
           >
-            <div className="flex justify-between" title="Ground track (true)">
+            <div className="flex justify-between" title="Magnetic ground track">
               <span style={{ color: 'var(--ff-fg-muted)' }}>TRK</span>
               <span
                 style={{
@@ -86,7 +86,7 @@ export function PositionCard() {
                   color: 'var(--ff-fg)',
                 }}
               >
-                {t ? `${fmtNum(t.track.true, 0)}°T` : dash}
+                {t ? `${fmtNum(t.track.magnetic, 0)}°` : dash}
               </span>
             </div>
           </Surface>

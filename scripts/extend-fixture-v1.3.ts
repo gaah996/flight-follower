@@ -17,7 +17,7 @@ const out = lines.map((line) => {
   return JSON.stringify({
     ...t,
     heading: { magnetic, true: trueHdg },
-    track: { true: trueHdg },
+    track: { magnetic },
     altitude: { msl: t.altitude?.msl ?? 0, indicated },
   });
 });

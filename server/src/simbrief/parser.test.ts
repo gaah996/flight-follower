@@ -130,18 +130,18 @@ describe('parseSimbriefOfp', () => {
     expect(parseSimbriefOfp(noCode).aircraftType).toBeUndefined();
   });
 
-  it('extracts blockTimeSec from times.est_block (seconds, preferred)', () => {
+  it('extracts blockTimeSec from times.sched_block (seconds, preferred)', () => {
     const plan = parseSimbriefOfp(fixture);
-    expect(plan.blockTimeSec).toBe(6900);
+    expect(plan.blockTimeSec).toBe(7200);
   });
 
-  it('falls back to times.sched_block when est_block is absent', () => {
+  it('falls back to times.est_block when sched_block is absent', () => {
     const without = {
       ...fixture,
-      times: { sched_out: '1714053600', sched_in: '1714060800', sched_block: '7200' },
+      times: { sched_out: '1714053600', sched_in: '1714060800', est_block: '6900' },
     };
     const plan = parseSimbriefOfp(without);
-    expect(plan.blockTimeSec).toBe(7200);
+    expect(plan.blockTimeSec).toBe(6900);
   });
 
   it('omits blockTimeSec when neither est_block nor sched_block is present', () => {

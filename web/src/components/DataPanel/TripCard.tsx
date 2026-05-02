@@ -168,7 +168,7 @@ export function TripCard() {
           <>
             <Separator className="my-3" />
             <div
-              className="flex items-center gap-1.5"
+              className="flex items-center gap-0.5"
               style={{ fontSize: 12, color: 'var(--ff-fg-muted)', fontFamily: 'ui-monospace, monospace' }}
             >
               <span className="flex-1 min-w-0 truncate">
@@ -180,6 +180,21 @@ export function TripCard() {
                   <> · {fmtDurationTier(active.eteSec ?? progress.eteToNextSec)}</>
                 )}
               </span>
+              <button
+                type="button"
+                onClick={() => setManualNextIndex(null)}
+                disabled={!active.isManual}
+                aria-label="Resume auto-tracking"
+                title={active.isManual ? 'Resume auto-tracking' : 'Auto-tracking active'}
+                className="px-1 bg-transparent border-0"
+                style={{
+                  color: active.isManual ? 'var(--ff-accent)' : 'var(--ff-fg-muted)',
+                  opacity: active.isManual ? 1 : 0.3,
+                  cursor: active.isManual ? 'pointer' : 'default',
+                }}
+              >
+                ↺
+              </button>
               <button
                 type="button"
                 onClick={() => step(-1)}
@@ -196,18 +211,6 @@ export function TripCard() {
               >
                 ▶
               </button>
-              {active.isManual && (
-                <button
-                  type="button"
-                  onClick={() => setManualNextIndex(null)}
-                  aria-label="Resume auto-tracking"
-                  title="Resume auto-tracking"
-                  className="px-1 cursor-pointer bg-transparent border-0"
-                  style={{ color: 'var(--ff-accent)' }}
-                >
-                  ↺
-                </button>
-              )}
             </div>
           </>
         )}

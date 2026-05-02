@@ -9,7 +9,7 @@ function telem(partial: Partial<RawTelemetry> & Pick<RawTelemetry, 'timestamp' |
     altitude: partial.altitude ?? { msl: 0 },
     speed: partial.speed ?? { ground: 0, indicated: 0, mach: 0 },
     heading: partial.heading ?? { magnetic: 0, true: 0 },
-    track: partial.track ?? { true: 0 },
+    track: partial.track ?? { magnetic: 0 },
     verticalSpeed: partial.verticalSpeed ?? 0,
     wind: partial.wind ?? { direction: 0, speed: 0 },
     onGround: partial.onGround,
