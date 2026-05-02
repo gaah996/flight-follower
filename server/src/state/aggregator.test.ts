@@ -228,6 +228,43 @@ describe('Aggregator progress', () => {
     );
     expect(a.getState().progress.nextWaypoint?.ident).toBe('W1');
   });
+
+  it('does not misfire on setPlan when telemetry was already at origin (LFPG → LEPA real flow)', () => {
+    // Reproduces the actual user flow: MSFS streams telemetry to the
+    // server while the aircraft is sitting at LFPG; user clicks Fetch
+    // and setPlan runs findPassedIndex with telemetry already populated.
+    // Without reach-gating on findPassedIndex, the seed misfires to
+    // near the end of the route, and routeRemainingNm clamps to ~0,
+    // showing the flight as complete before it starts.
+    const PLAN_LFPG_SHAPE: FlightPlan = {
+      fetchedAt: 0,
+      origin: { icao: 'AAAA', lat: 49, lon: 0 },
+      destination: { icao: 'BBBB', lat: 38, lon: 0 },
+      waypoints: [
+        { ident: 'W1', lat: 47, lon: 0 },
+        { ident: 'W2', lat: 45, lon: 0 },
+        { ident: 'W3', lat: 43, lon: 0 },
+        { ident: 'W4', lat: 44, lon: 0 },
+        { ident: 'W5', lat: 40, lon: 0 },
+      ],
+    };
+    const a = new Aggregator();
+    // Telemetry arrives FIRST (MSFS already streaming).
+    a.ingestTelemetry(
+      telem({
+        timestamp: 0,
+        position: { lat: 49, lon: 0 },
+        onGround: true,
+        speed: { ground: 5, indicated: 5, mach: 0 },
+      }),
+    );
+    // Then the plan loads (user clicks Fetch).
+    a.setPlan(PLAN_LFPG_SHAPE);
+    expect(a.getState().progress.nextWaypoint?.ident).toBe('W1');
+    // Remaining distance should be roughly the full route length, not 0.
+    // 11° at lon 0 ≈ 660 nm; assert > 500 to allow for great-circle drift.
+    expect(a.getState().progress.distanceToDestNm).toBeGreaterThan(500);
+  });
 });
 
 describe('Aggregator near-(0,0) filter', () => {

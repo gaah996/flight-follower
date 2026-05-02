@@ -151,9 +151,11 @@ describe('advancePassedIndexWindowed', () => {
       { ident: 'E', lat: 40, lon: 0 },
     ];
     expect(advancePassedIndexWindowed({ lat: 49, lon: 0 }, lfpgShape, -1)).toBe(-1);
-    // Sanity: the unbounded variant DOES misfire here (this is the bug we
-    // are fixing — kept as a regression anchor; if findPassedIndex is ever
-    // refined we'll re-evaluate this assertion).
-    expect(findPassedIndex({ lat: 49, lon: 0 }, lfpgShape)).toBeGreaterThanOrEqual(3);
+    // Anchor: with reach-gating (v1.3.1), findPassedIndex also returns -1
+    // for this geometry — only the first leg is within 200 nm of the
+    // origin, and its bearing misaligns. Both the windowed per-tick path
+    // and the full-scan plan-load path are now safe against the LFPG
+    // misfire shape.
+    expect(findPassedIndex({ lat: 49, lon: 0 }, lfpgShape)).toBe(-1);
   });
 });

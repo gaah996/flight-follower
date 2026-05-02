@@ -3,6 +3,7 @@ import { bearingDeg, haversineNm } from './distance.js';
 
 const MIN_GS_FOR_ETE_KTS = 30;
 const EARTH_RADIUS_NM = 3440.065;
+const FIND_PASSED_INDEX_REACH_NM = 200;
 const toRad = (d: number) => (d * Math.PI) / 180;
 
 /**
@@ -71,6 +72,12 @@ export function advancePassedIndex(
  * "just past waypoint N" case — when the aircraft is close to N but on the
  * far side, the along-track value exceeds the [N-1, N] leg length and
  * tracking advances to N+1 (rather than re-targeting N).
+ *
+ * Reach-gated: legs whose endpoints are both farther than 200 nm from pos
+ * are skipped. Without this gate, a far leg whose bearing aligns with the
+ * bearing from its start back to pos would misfire (along-track exceeds
+ * legNm with positive sign). Use only for one-shot seeding such as
+ * plan-load; for per-tick advancement, use advancePassedIndexWindowed.
  */
 export function findPassedIndex(pos: LatLon, waypoints: Waypoint[]): number {
   let passed = -1;
@@ -79,6 +86,19 @@ export function findPassedIndex(pos: LatLon, waypoints: Waypoint[]): number {
     const b = waypoints[i + 1]!;
     const legNm = haversineNm(a.lat, a.lon, b.lat, b.lon);
     if (legNm === 0) continue;
+    // Reach gate: full-scan along-track misfires when pos is far from a leg
+    // but roughly collinear with it (the leg's bearing aligns with the
+    // bearing from the leg's start back to pos). This is the bug behind
+    // the LFPG → LEPA "next jumps to destination at plan-load" report:
+    // a near-destination leg's bearing happened to align with the bearing
+    // from that leg's start back to the LFPG origin, so the projection
+    // returned a positive value much greater than the leg's natural
+    // length. Skip legs whose endpoints are both farther than
+    // FIND_PASSED_INDEX_REACH_NM from pos — the aircraft cannot
+    // realistically have just passed a waypoint hundreds of nm away.
+    const dToA = haversineNm(pos.lat, pos.lon, a.lat, a.lon);
+    const dToB = haversineNm(pos.lat, pos.lon, b.lat, b.lon);
+    if (Math.min(dToA, dToB) > FIND_PASSED_INDEX_REACH_NM) continue;
     const along = alongTrackNm(pos, a, b);
     if (along >= legNm) {
       // Past waypoint i+1 along this leg's direction.
