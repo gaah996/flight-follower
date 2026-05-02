@@ -118,10 +118,14 @@ export function FlightPlanCard() {
       : plan.flightNumber
     : plan.aircraftType ?? dash;
 
+  // Block time comes directly from Simbrief (plan.blockTimeSec — est_block
+  // preferred, sched_block fallback). Falls back to STA-derivation only if
+  // the OFP didn't include either, for back-compat with older fixtures.
   const blockTimeSec =
-    plan.scheduledOut != null && plan.scheduledIn != null
+    plan.blockTimeSec ??
+    (plan.scheduledOut != null && plan.scheduledIn != null
       ? Math.max(0, Math.floor((plan.scheduledIn - plan.scheduledOut) / 1000))
-      : null;
+      : null);
 
   return (
     <Card variant="default">
@@ -167,12 +171,18 @@ export function FlightPlanCard() {
             onClick={() => setExpanded((v) => !v)}
             title={expanded ? 'Click to collapse' : 'Click to expand'}
             className={`rounded-lg py-1 px-2 ml-[-8px] mr-[-8px] text-xs cursor-pointer ${
-              expanded ? '' : 'line-clamp-2'
+              expanded ? '' : 'line-clamp-2 max-h-[2.5rem] overflow-hidden'
             }`}
             style={{
               fontFamily: 'ui-monospace, monospace',
               color: 'var(--ff-fg-muted)',
-              wordBreak: expanded ? 'break-all' : undefined,
+              // Wrap at whitespace only; never break a fix name in the middle
+              // (e.g. RUDAP must never render as RUD-AP). The route string is
+              // already space-delimited, so this just lets the browser pick
+              // line breaks at the existing spaces.
+              wordBreak: 'keep-all',
+              overflowWrap: 'normal',
+              whiteSpace: 'normal',
             }}
           >
             {plan.routeString}
