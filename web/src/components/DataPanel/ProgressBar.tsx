@@ -23,12 +23,13 @@ type Props = {
   progress: FlightProgress;
 };
 
-// 14 px tall × 8 px wide hit-area; the visible 1 px dashed line sits in the
-// middle. Tall enough to overhang the 10 px bar by ~2 px on each side so the
-// marker reads as a tick crossing the bar. Hardcoded because the height:
-// 100% chain doesn't survive HeroUI's Tooltip wrapping. JSX order in the
-// parent ensures the tick paints on top of the progress fill.
-const TICK_HEIGHT = 14;
+// 12 px tall × 8 px wide hit-area; the visible 1 px dashed line sits in the
+// middle. Tall enough to overhang the 10 px bar by ~1 px on each side so the
+// marker reads as a tick crossing the bar without poking too far out.
+// Hardcoded because the height: 100% chain doesn't survive HeroUI's Tooltip
+// wrapping. JSX order in the parent ensures the tick paints on top of the
+// progress fill.
+const TICK_HEIGHT = 12;
 const TICK_WIDTH = 8;
 
 function CruiseTick({ pct, label }: { pct: number; label: string }) {
@@ -41,7 +42,7 @@ function CruiseTick({ pct, label }: { pct: number; label: string }) {
       className="absolute"
       style={{
         left: `${pct * 100}%`,
-        top: -3,
+        top: -2,
         transform: "translateX(-50%)",
         width: TICK_WIDTH,
         height: TICK_HEIGHT,
@@ -65,7 +66,7 @@ function CruiseTick({ pct, label }: { pct: number; label: string }) {
                 top: 0,
                 bottom: 0,
                 width: 0,
-                borderLeft: "1px dashed var(--ff-fg-muted)",
+                borderLeft: "1px dashed var(--ff-fg)",
               }}
             />
           </div>
