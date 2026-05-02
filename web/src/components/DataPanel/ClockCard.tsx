@@ -134,13 +134,27 @@ export function ClockCard() {
   const dnLat = t?.position.lat ?? plan?.origin.lat;
   const dnLon = t?.position.lon ?? plan?.origin.lon;
 
-  const phase = computePhase(
-    t?.altitude.msl,
-    t?.verticalSpeed,
-    t?.speed.ground,
-    plan?.cruiseAltitudeFt,
-    distToDest
-  );
+  // Plan-driven TOC/TOD if the aggregator computed them (plan is loaded);
+  // otherwise fall back to the legacy VS / 3:1 estimator. This is the only
+  // place the legacy estimator survives in v1.3 — graceful degradation, not
+  // the primary path.
+  const eteToToc = useFlightStore((s) => s.state.progress.eteToTocSec);
+  const eteToTod = useFlightStore((s) => s.state.progress.eteToTodSec);
+
+  let phase: Phase | null;
+  if (eteToToc != null && eteToToc > 0) {
+    phase = { label: 'TOC', tooltip: 'Top of climb (plan-derived)', sec: eteToToc };
+  } else if (eteToTod != null && eteToTod > 0) {
+    phase = { label: 'TOD', tooltip: 'Top of descent (plan-derived)', sec: eteToTod };
+  } else {
+    phase = computePhase(
+      t?.altitude.msl,
+      t?.verticalSpeed,
+      t?.speed.ground,
+      plan?.cruiseAltitudeFt,
+      distToDest,
+    );
+  }
 
   return (
     <Card variant="default">
