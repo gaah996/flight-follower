@@ -152,8 +152,8 @@ export function FlightPlanCard() {
   const [expanded, setExpanded] = useState(false);
 
   const progressPct =
-    plan?.totalDistanceNm != null && distToDest != null
-      ? Math.max(0, Math.min(1, 1 - distToDest / plan.totalDistanceNm))
+    plan?.routeTotalDistanceNm != null && distToDest != null
+      ? Math.max(0, Math.min(1, 1 - distToDest / plan.routeTotalDistanceNm))
       : 0;
 
   if (!plan) {

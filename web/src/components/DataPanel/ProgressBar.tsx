@@ -79,7 +79,7 @@ function CruiseTick({ pct, label }: { pct: number; label: string }) {
 
 export function ProgressBar({ plan, progress }: Props) {
   const totalNm =
-    plan.totalDistanceNm ??
+    plan.routeTotalDistanceNm ??
     haversineNm(
       plan.origin.lat,
       plan.origin.lon,

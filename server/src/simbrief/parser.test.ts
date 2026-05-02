@@ -84,12 +84,16 @@ describe('parseSimbriefOfp', () => {
     expect(plan.cruiseAltitudeFt).toBe(36000);
   });
 
-  it('computes totalDistanceNm as the haversine sum of legs origin → waypoints → destination', () => {
+  it('extracts total distance in nautical miles, preferring air_distance', () => {
     const plan = parseSimbriefOfp(fixture);
-    // EGLL → MID → TOC → OKRIX → TOD → BAN → LEMD
-    // Approx 673 nm (haversine sum); assert a 5 nm tolerance window.
-    expect(plan.totalDistanceNm).toBeGreaterThan(668);
-    expect(plan.totalDistanceNm).toBeLessThan(678);
+    expect(plan.totalDistanceNm).toBe(1085);
+  });
+
+  it('computes routeTotalDistanceNm as the haversine sum of legs origin → waypoints → destination', () => {
+    const plan = parseSimbriefOfp(fixture);
+    // EGLL → MID → TOC → OKRIX → TOD → BAN → LEMD ≈ 674 nm.
+    expect(plan.routeTotalDistanceNm).toBeGreaterThan(670);
+    expect(plan.routeTotalDistanceNm).toBeLessThan(680);
   });
 
   it('extracts route string, preferring route_navigraph when present', () => {
@@ -116,9 +120,11 @@ describe('parseSimbriefOfp', () => {
     expect(plan.flightNumber).toBeUndefined();
     expect(plan.aircraftType).toBeUndefined();
     expect(plan.cruiseAltitudeFt).toBeUndefined();
+    expect(plan.totalDistanceNm).toBeUndefined();
     expect(plan.routeString).toBeUndefined();
-    // totalDistanceNm is now always computed from origin/waypoints/destination
-    // (v1.3.1) and is therefore always defined; not asserted here.
+    // routeTotalDistanceNm is computed from origin/waypoints/destination,
+    // so it's always defined regardless of the general block.
+    expect(plan.routeTotalDistanceNm).toBeGreaterThan(0);
   });
 
   it('omits flightNumber when only one of icao_airline / flight_number is present', () => {

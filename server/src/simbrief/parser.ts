@@ -29,6 +29,8 @@ const GeneralSchema = z.object({
   icao_airline: z.string().optional(),
   flight_number: z.string().optional(),
   initial_altitude: numFromStr.optional(),
+  air_distance: numFromStr.optional(),
+  route_distance: numFromStr.optional(),
   route: z.string().optional(),
   route_navigraph: z.string().optional(),
 });
@@ -72,21 +74,24 @@ export function parseSimbriefOfp(raw: unknown): FlightPlan {
     plannedAltitude: f.altitude_feet,
   }));
 
-  // Total route distance is the sum of haversine legs
-  // [origin, ...waypoints, destination]. v1.3.1: replaces Simbrief's
-  // air_distance / route_distance so the displayed total and the
-  // numerator used for progress (routeRemainingNm) are in the same
-  // units. Without this, totalDistanceNm could be a few % higher than
-  // the leg-sum (Simbrief includes wind/route adjustments) and the
-  // progress bar would read non-zero before the aircraft moves.
+  // Simbrief's printed total distance (air_distance preferred, with
+  // route_distance as fallback). May include wind/route adjustments that
+  // aren't visible in the geometric waypoint sum. Displayed in
+  // FlightPlanCard so the panel matches the OFP the pilot files.
+  const totalDistanceNm = ofp.general?.air_distance ?? ofp.general?.route_distance;
+
+  // Geometric haversine sum of legs [origin, ...waypoints, destination].
+  // Used as the denominator for progress percentages so progress reads
+  // exactly 0% at origin and 100% at destination, matching the
+  // route-following progress.distanceToDestNm numerator.
   const points = [
     { lat: ofp.origin.pos_lat, lon: ofp.origin.pos_long },
     ...waypoints.map((w) => ({ lat: w.lat, lon: w.lon })),
     { lat: ofp.destination.pos_lat, lon: ofp.destination.pos_long },
   ];
-  let totalDistanceNm = 0;
+  let routeTotalDistanceNm = 0;
   for (let i = 0; i < points.length - 1; i++) {
-    totalDistanceNm += haversineNm(
+    routeTotalDistanceNm += haversineNm(
       points[i]!.lat,
       points[i]!.lon,
       points[i + 1]!.lat,
@@ -123,6 +128,7 @@ export function parseSimbriefOfp(raw: unknown): FlightPlan {
     aircraftType: ofp.aircraft?.icao_code,
     cruiseAltitudeFt: ofp.general?.initial_altitude,
     totalDistanceNm,
+    routeTotalDistanceNm,
     routeString,
     blockTimeSec,
   };

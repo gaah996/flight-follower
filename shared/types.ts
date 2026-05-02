@@ -40,7 +40,23 @@ export type FlightPlan = {
   flightNumber?: string;
   aircraftType?: string;
   cruiseAltitudeFt?: number;
+  /**
+   * Total flight distance as printed in the Simbrief OFP (`air_distance`,
+   * with `route_distance` as fallback). May include wind/route adjustments
+   * that aren't visible in the geometric waypoint sum. Used for display
+   * in FlightPlanCard so the panel matches the OFP the pilot files. For
+   * progress math (denominators), use `routeTotalDistanceNm` instead.
+   */
   totalDistanceNm?: number;
+  /**
+   * Geometric haversine sum of legs `[origin, ...waypoints, destination]`.
+   * Used as the denominator for progress percentages and glyph reveal so
+   * progress reads exactly 0% at the origin and 100% at the destination,
+   * matching the route-following `progress.distanceToDestNm` numerator.
+   * Always defined for plans parsed by parseSimbriefOfp; the optional
+   * marker is for back-compat with any future plan sources.
+   */
+  routeTotalDistanceNm?: number;
   routeString?: string;
   blockTimeSec?: number;
 };
