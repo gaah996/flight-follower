@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { FlightPlan } from '@ff/shared';
+import { haversineNm } from '../route-math/distance.js';
 
 const numFromStr = z.union([z.number(), z.string().transform((s) => Number(s))]);
 
@@ -28,8 +29,6 @@ const GeneralSchema = z.object({
   icao_airline: z.string().optional(),
   flight_number: z.string().optional(),
   initial_altitude: numFromStr.optional(),
-  air_distance: numFromStr.optional(),
-  route_distance: numFromStr.optional(),
   route: z.string().optional(),
   route_navigraph: z.string().optional(),
 });
@@ -64,8 +63,36 @@ export function parseSimbriefOfp(raw: unknown): FlightPlan {
       ? `${ofp.general.icao_airline}${ofp.general.flight_number}`
       : undefined;
 
-  const totalDistanceNm = ofp.general?.air_distance ?? ofp.general?.route_distance;
   const routeString = ofp.general?.route_navigraph ?? ofp.general?.route;
+
+  const waypoints = ofp.navlog.fix.map((f) => ({
+    ident: f.ident,
+    lat: f.pos_lat,
+    lon: f.pos_long,
+    plannedAltitude: f.altitude_feet,
+  }));
+
+  // Total route distance is the sum of haversine legs
+  // [origin, ...waypoints, destination]. v1.3.1: replaces Simbrief's
+  // air_distance / route_distance so the displayed total and the
+  // numerator used for progress (routeRemainingNm) are in the same
+  // units. Without this, totalDistanceNm could be a few % higher than
+  // the leg-sum (Simbrief includes wind/route adjustments) and the
+  // progress bar would read non-zero before the aircraft moves.
+  const points = [
+    { lat: ofp.origin.pos_lat, lon: ofp.origin.pos_long },
+    ...waypoints.map((w) => ({ lat: w.lat, lon: w.lon })),
+    { lat: ofp.destination.pos_lat, lon: ofp.destination.pos_long },
+  ];
+  let totalDistanceNm = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    totalDistanceNm += haversineNm(
+      points[i]!.lat,
+      points[i]!.lon,
+      points[i + 1]!.lat,
+      points[i + 1]!.lon,
+    );
+  }
 
   return {
     fetchedAt: Date.now(),
@@ -89,12 +116,7 @@ export function parseSimbriefOfp(raw: unknown): FlightPlan {
           name: ofp.alternate.name,
         }
       : undefined,
-    waypoints: ofp.navlog.fix.map((f) => ({
-      ident: f.ident,
-      lat: f.pos_lat,
-      lon: f.pos_long,
-      plannedAltitude: f.altitude_feet,
-    })),
+    waypoints,
     scheduledOut: schedOutSec != null ? schedOutSec * 1000 : undefined,
     scheduledIn: schedInSec != null ? schedInSec * 1000 : undefined,
     flightNumber,
