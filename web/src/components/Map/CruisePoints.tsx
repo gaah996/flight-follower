@@ -11,14 +11,14 @@ const STROKE = '#334155';
 const TOC_GLYPH = `
   <svg viewBox="0 0 14 14" width="14" height="14" style="display:block;">
     <circle cx="7" cy="7" r="6" fill="#fff" stroke="${STROKE}" stroke-width="1"/>
-    <path d="M4 9.5 L7 4 L10 9.5" stroke="${STROKE}" stroke-width="1.25" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M4 9 L7 5 L10 9" stroke="${STROKE}" stroke-width="1.25" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
 `;
 
 const TOD_GLYPH = `
   <svg viewBox="0 0 14 14" width="14" height="14" style="display:block;">
     <circle cx="7" cy="7" r="6" fill="#fff" stroke="${STROKE}" stroke-width="1"/>
-    <path d="M4 4.5 L7 10 L10 4.5" stroke="${STROKE}" stroke-width="1.25" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M4 5 L7 9 L10 5" stroke="${STROKE}" stroke-width="1.25" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
 `;
 
