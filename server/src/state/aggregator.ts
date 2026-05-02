@@ -135,8 +135,12 @@ export class Aggregator extends EventEmitter {
     // Two complementary advancement paths, both forward-only via Math.max:
     //  - advancePassedIndex (close-pass, 2 nm threshold) catches the precise
     //    moment of crossing waypoints when on-route.
-    //  - findPassedIndex (along-track projection) catches the off-track case
-    //    where the aircraft is wide of the waypoint by more than the threshold.
+    //  - advancePassedIndexWindowed (bounded along-track projection) catches
+    //    the off-track case where the aircraft is wide of the waypoint by
+    //    more than the threshold. The window restricts reconciliation to
+    //    legs near the current cursor — full-scan along-track misfires when
+    //    a far leg's bearing aligns with the aircraft's bearing from the
+    //    leg's start (LFPG → LEPA bug, v1.3.1).
     const closePassIdx = advancePassedIndex(
       t.position,
       plan.waypoints,
