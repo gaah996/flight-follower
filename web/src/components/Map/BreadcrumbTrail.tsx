@@ -2,34 +2,46 @@ import { Pane, Polyline } from 'react-leaflet';
 import { useFlightStore } from '../../store/flight.js';
 import { altitudeToColor } from '../../lib/altitudePalette.js';
 
-// Bucket altitude in 2000-ft steps so consecutive samples in the same band
-// share a single multi-point polyline. Each polyline benefits from Leaflet's
-// internal smoothing (no kinks at sample joints), and the 2000-ft step keeps
-// color transitions small enough that the bucketed gradient still reads as
-// continuous. Typical flight: ~30-40 polylines.
-const BUCKET_FT = 2000;
+// Variable bucket sizing — fine resolution where altitude is changing
+// (climb / descent) and coarse where it isn't (cruise).
+//
+//   0 – 10,000 ft : 1,000 ft buckets   pattern + departure/arrival climb
+//  10 – 30,000 ft : 2,000 ft buckets   mid-climb / mid-descent
+//  30,000 ft up   : 3,000 ft buckets   cruise (mostly constant alt anyway)
+//
+// Returns the bucket key (lower bound, unique across the range) plus the
+// altitude at the bucket centre so colour lookup is honest.
+function altitudeBucket(altMsl: number): { key: number; centerFt: number } {
+  if (altMsl < 10_000) {
+    const key = Math.floor(altMsl / 1000) * 1000;
+    return { key, centerFt: key + 500 };
+  }
+  if (altMsl < 30_000) {
+    const key = Math.floor((altMsl - 10_000) / 2000) * 2000 + 10_000;
+    return { key, centerFt: key + 1000 };
+  }
+  const key = Math.floor((altMsl - 30_000) / 3000) * 3000 + 30_000;
+  return { key, centerFt: key + 1500 };
+}
 
-// Lives in its own pane at z=410, just above the cruise-points pane (405)
-// so the actual flight trail draws over the planned-vs-actual markers, but
-// below the aircraft (markerPane = 600).
+// Pane at z=410, just above the cruise-points pane (405) so the actual
+// flight trail draws over the planned-vs-actual markers but below the
+// aircraft (markerPane = 600).
 const PANE_NAME = 'ff-breadcrumb';
 
 export function BreadcrumbTrail() {
   const crumbs = useFlightStore((s) => s.state.breadcrumb);
   if (crumbs.length < 2) return null;
 
-  const segments: Array<{ bucket: number; color: string; points: [number, number][] }> = [];
-  let current: { bucket: number; color: string; points: [number, number][] } | null = null;
+  const segments: Array<{ key: number; color: string; points: [number, number][] }> = [];
+  let current: { key: number; color: string; points: [number, number][] } | null = null;
   for (let i = 0; i < crumbs.length; i++) {
     const c = crumbs[i]!;
-    const bucket = Math.floor(c.altMsl / BUCKET_FT);
-    if (!current || current.bucket !== bucket) {
-      // Color the bucket from the altitude at its centre so adjacent buckets
-      // differ by one BUCKET_FT step in the interpolation domain — a small,
-      // even visual gradation.
-      const color = altitudeToColor((bucket + 0.5) * BUCKET_FT);
+    const { key, centerFt } = altitudeBucket(c.altMsl);
+    if (!current || current.key !== key) {
+      const color = altitudeToColor(centerFt);
       const prev = i > 0 ? crumbs[i - 1]! : null;
-      current = { bucket, color, points: prev ? [[prev.lat, prev.lon]] : [] };
+      current = { key, color, points: prev ? [[prev.lat, prev.lon]] : [] };
       segments.push(current);
     }
     current.points.push([c.lat, c.lon]);
