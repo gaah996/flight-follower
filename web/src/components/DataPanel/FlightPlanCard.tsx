@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from '@heroui/react';
 import { useFlightStore } from '../../store/flight.js';
+import { altitudeToColor } from '../../lib/altitudePalette.js';
 import { dash, fmtDurationTier, fmtUtcTime } from './fmt.js';
 import { Row } from './Row.js';
 
@@ -29,7 +30,7 @@ function haversineNm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 // cumulative great-circle distance. Step climbs and shallow climb/descent
 // gradients show up naturally. Falls back to a generic trapezoid when the
 // plan has no per-waypoint altitudes to work with.
-function AltitudeProfileGlyph({ plan }: { plan: FlightPlan }) {
+function AltitudeProfileGlyph({ plan, progress }: { plan: FlightPlan; progress: number }) {
   const W = 36;
   const H = 14;
   const PAD = 1;
@@ -66,6 +67,24 @@ function AltitudeProfileGlyph({ plan }: { plan: FlightPlan }) {
     polylinePoints = `${PAD},${H - PAD} 6,3 ${W - 6},3 ${W - PAD},${H - PAD}`;
   }
 
+  // Compute gradient stops from the profile so the polyline stroke matches
+  // the breadcrumb's altitude palette. Uses userSpaceOnUse coordinates so
+  // stop offsets are in viewBox x-units (PAD .. W-PAD), mapping each point's
+  // distance directly to its position on the gradient line. Falls back to a
+  // single-color stroke when there's no altitude data (generic trapezoid).
+  const gradientId = `ff-glyph-grad-${plan.fetchedAt}`;
+  const useGradient = profile.length >= 2 && maxDist > 0 && maxAlt > 0;
+  const stops = useGradient
+    ? profile.map(([d, a]) => ({
+        offset: (d / maxDist) * 100,
+        color: altitudeToColor(a),
+      }))
+    : [];
+
+  // Progress overlay: translucent veil over the unflown portion. As the
+  // flight progresses, the veil shrinks toward the destination edge.
+  const flownX = PAD + Math.max(0, Math.min(1, progress)) * (W - 2 * PAD);
+
   return (
     <svg
       width={W}
@@ -74,13 +93,39 @@ function AltitudeProfileGlyph({ plan }: { plan: FlightPlan }) {
       aria-hidden
       style={{ color: 'var(--ff-fg-muted)' }}
     >
+      {useGradient && (
+        <defs>
+          <linearGradient
+            id={gradientId}
+            gradientUnits="userSpaceOnUse"
+            x1={PAD}
+            y1={0}
+            x2={W - PAD}
+            y2={0}
+          >
+            {stops.map((s, i) => (
+              <stop key={i} offset={`${s.offset}%`} stopColor={s.color} />
+            ))}
+          </linearGradient>
+        </defs>
+      )}
       <polyline
         points={polylinePoints}
         fill="none"
-        stroke="currentColor"
+        stroke={useGradient ? `url(#${gradientId})` : 'currentColor'}
         strokeWidth={1}
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+      {/* Translucent veil over the unflown portion. Shrinks toward
+          destination as the flight progresses. */}
+      <rect
+        x={flownX}
+        y={0}
+        width={W - flownX}
+        height={H}
+        fill="var(--ff-bg)"
+        opacity={0.4}
       />
     </svg>
   );
@@ -95,7 +140,13 @@ function fmtFL(ft: number | undefined): string {
 
 export function FlightPlanCard() {
   const plan = useFlightStore((s) => s.state.plan);
+  const distToDest = useFlightStore((s) => s.state.progress.distanceToDestNm);
   const [expanded, setExpanded] = useState(false);
+
+  const progressPct =
+    plan?.totalDistanceNm != null && distToDest != null
+      ? Math.max(0, Math.min(1, 1 - distToDest / plan.totalDistanceNm))
+      : 0;
 
   if (!plan) {
     return (
@@ -132,7 +183,7 @@ export function FlightPlanCard() {
       <Card.Header>
         <div className="flex items-center justify-between">
           <Card.Title>Flight plan</Card.Title>
-          <AltitudeProfileGlyph plan={plan} />
+          <AltitudeProfileGlyph plan={plan} progress={progressPct} />
         </div>
         <div className="flex items-center gap-2">
           <Card.Description>{callsign}</Card.Description>
