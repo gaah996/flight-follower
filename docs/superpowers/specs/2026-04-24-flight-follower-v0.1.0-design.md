@@ -2,7 +2,7 @@
 
 - **Date:** 2026-04-24
 - **Status:** Approved, ready for implementation planning
-- **Scope:** v1
+- **Scope:** v0.1.0
 
 ## 1. Overview
 
@@ -17,9 +17,9 @@ The target user:
 - Starts MSFS as a VFR flight (no MSFS flight plan loaded).
 - Flies the FlyByWire A320 (FBW A32NX) and enters the route manually into the FMC.
 
-Implication: MSFS itself has no loaded flight plan the server can query. The planned route lives in Simbrief (and, redundantly, in the FBW FMC, which we don't read in v1). Simbrief is therefore the single source of truth for the planned route.
+Implication: MSFS itself has no loaded flight plan the server can query. The planned route lives in Simbrief (and, redundantly, in the FBW FMC, which we don't read in v0.1.0). Simbrief is therefore the single source of truth for the planned route.
 
-## 3. Goals (v1)
+## 3. Goals (v0.1.0)
 
 1. Live telemetry on a 2D map: aircraft position, heading, actual breadcrumb trail.
 2. Side-panel showing altitude, speeds (GS/IAS/Mach), heading, vertical speed, wind, flight time, next waypoint + ETA, distance and time remaining to destination.
@@ -28,7 +28,7 @@ Implication: MSFS itself has no loaded flight plan the server can query. The pla
 5. Three map view modes: **Overview** (fit to origin + destination), **Follow** (auto-center on aircraft), **Manual** (pinned to wherever the user dragged).
 6. Graceful behavior when the sim isn't running, Simbrief is unreachable, or no plan is loaded yet.
 
-## 4. Non-goals (v1)
+## 4. Non-goals (v0.1.0)
 
 Explicitly out of scope to prevent drift:
 
@@ -383,7 +383,7 @@ The `dev-telemetry-replay` script is a deliberate investment — it lets UI and 
 
 ## 14. Open questions / deferred decisions
 
-None blocking v1 implementation. The following are intentionally deferred and will be revisited if/when the corresponding feature is picked up:
+None blocking v0.1.0 implementation. The following are intentionally deferred and will be revisited if/when the corresponding feature is picked up:
 
 - Exact on-disk format for flight logs (JSONL vs. SQLite) — decide when implementing logging.
 - FBW LVAR reading approach (SimConnect Client Data Area vs. WASM module) — decide when implementing FMC read.

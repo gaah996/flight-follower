@@ -24,7 +24,7 @@ Built for personal use while flying the FlyByWire A32NX, but works with any airc
 
 ## Stack
 
-TypeScript end-to-end. Server: Node 20, Fastify, ws, [`node-simconnect`](https://www.npmjs.com/package/node-simconnect), Zod. Web: Vite, React 19, Leaflet (via react-leaflet), Zustand. Vitest for unit tests. Single-port HTTP + WebSocket; npm workspaces for the three packages (`shared`, `server`, `web`). v1.2 introduces Tailwind v4, HeroUI for theming and primitives, and a dark-by-default theme that toggles in the header.
+TypeScript end-to-end. Server: Node 20, Fastify, ws, [`node-simconnect`](https://www.npmjs.com/package/node-simconnect), Zod. Web: Vite, React 19, Leaflet (via react-leaflet), Zustand. Vitest for unit tests. Single-port HTTP + WebSocket; npm workspaces for the three packages (`shared`, `server`, `web`). v0.3.0 introduces Tailwind v4, HeroUI for theming and primitives, and a dark-by-default theme that toggles in the header.
 
 ## Quick start
 
@@ -174,11 +174,11 @@ Smaller deferrals live in [`docs/backlog.md`](./docs/backlog.md).
 
 ## Documents
 
-- [v1 design spec](./docs/superpowers/specs/2026-04-24-flight-follower-design.md) — what we're building and why
-- [v1 implementation plan](./docs/superpowers/plans/2026-04-24-flight-follower.md) — the task-by-task plan that built v1
-- [v1.1 design](./docs/superpowers/specs/2026-04-25-flight-follower-v1.1-design.md) and [v1.1 plan](./docs/superpowers/plans/2026-04-25-flight-follower-v1.1.md)
-- [v1.2 design](./docs/superpowers/specs/2026-04-25-flight-follower-v1.2-design.md) and [v1.2 plan](./docs/superpowers/plans/2026-04-25-flight-follower-v1.2.md)
-- [v1.3 design](./docs/superpowers/specs/2026-05-01-flight-follower-v1.3-design.md) and [v1.3 plan](./docs/superpowers/plans/2026-05-01-flight-follower-v1.3.md)
+- [v0.1.0 design spec](./docs/superpowers/specs/2026-04-24-flight-follower-v0.1.0-design.md) — what we're building and why
+- [v0.1.0 implementation plan](./docs/superpowers/plans/2026-04-24-flight-follower-v0.1.0.md) — the task-by-task plan that built v0.1.0
+- [v0.2.0 design](./docs/superpowers/specs/2026-04-25-flight-follower-v0.2.0-design.md) and [v0.2.0 plan](./docs/superpowers/plans/2026-04-25-flight-follower-v0.2.0.md)
+- [v0.3.0 design](./docs/superpowers/specs/2026-04-25-flight-follower-v0.3.0-design.md) and [v0.3.0 plan](./docs/superpowers/plans/2026-04-25-flight-follower-v0.3.0.md)
+- [v0.4.0 design](./docs/superpowers/specs/2026-05-01-flight-follower-v0.4.0-design.md) and [v0.4.0 plan](./docs/superpowers/plans/2026-05-01-flight-follower-v0.4.0.md)
 - [Backlog](./docs/backlog.md) — items deferred during brainstorming
 
 ## License

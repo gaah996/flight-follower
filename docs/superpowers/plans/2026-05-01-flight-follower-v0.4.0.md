@@ -1,4 +1,4 @@
-# Flight Follower v1.3 Implementation Plan
+# Flight Follower v0.4.0 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -6,14 +6,14 @@
 
 **Architecture:** Most work lives in the frontend. The server gains a small pure module (`route-math/cruise-points.ts`) and minor extensions to the aggregator, Simbrief parser, and sim-bridge. Shared types add `heading.true`, `track`, optional `altitude.indicated`, a `BreadcrumbSample` shape, four `FlightProgress` fields, an optional `FlightPlan.blockTimeSec`, and conditionally `Waypoint.altConstraint`/`speedConstraint` if the spike succeeds. Skip-waypoint state lives in a new FE store; an `activeWaypoint` selector falls through to server-derived values when no override is set.
 
-**Tech Stack:** Same as v1.2 — TypeScript end-to-end, Node 20 + Fastify + node-simconnect + Zod + Vitest on the server; Vite + React 19 + react-leaflet + Zustand + HeroUI + Tailwind v4 on the web.
+**Tech Stack:** Same as v0.3.0 — TypeScript end-to-end, Node 20 + Fastify + node-simconnect + Zod + Vitest on the server; Vite + React 19 + react-leaflet + Zustand + HeroUI + Tailwind v4 on the web.
 
-**Spec:** [`docs/superpowers/specs/2026-05-01-flight-follower-v1.3-design.md`](../specs/2026-05-01-flight-follower-v1.3-design.md)
+**Spec:** [`docs/superpowers/specs/2026-05-01-flight-follower-v0.4.0-design.md`](../specs/2026-05-01-flight-follower-v0.4.0-design.md)
 
-**Branch:** Implementation runs on a new feature branch: `feat/v1.3-implementation`. Create it as the first action before Task 0.
+**Branch:** Implementation runs on a new feature branch: `feat/v0.4.0-implementation`. Create it as the first action before Task 0.
 
 ```bash
-git checkout -b feat/v1.3-implementation
+git checkout -b feat/v0.4.0-implementation
 ```
 
 ---
@@ -58,8 +58,8 @@ git checkout -b feat/v1.3-implementation
 - `web/src/index.css` — add `--ff-alternate` token in both themes; reduce light-mode tooltip transparency.
 
 ### Modified files (docs)
-- `README.md` — under "Features", note the v1.3 additions (breadcrumb gradient, TOC/TOD markers, progress timeline, skip-waypoint, alternate, live ETA).
-- `docs/backlog.md` — mark v1.3 items as completed-from-backlog when the release ships (final task).
+- `README.md` — under "Features", note the v0.4.0 additions (breadcrumb gradient, TOC/TOD markers, progress timeline, skip-waypoint, alternate, live ETA).
+- `docs/backlog.md` — mark v0.4.0 items as completed-from-backlog when the release ships (final task).
 
 ---
 
@@ -75,17 +75,17 @@ git checkout -b feat/v1.3-implementation
 
 ## Milestone 0 — Fixture preparation (Task 0)
 
-One-shot extension of the NZQN fixture so v1.3's heading-true and altitude-indicated bug fixes are verifiable against the replay.
+One-shot extension of the NZQN fixture so v0.4.0's heading-true and altitude-indicated bug fixes are verifiable against the replay.
 
 ---
 
-## Task 0: Extend NZQN fixture with synthesized v1.3 fields
+## Task 0: Extend NZQN fixture with synthesized v0.4.0 fields
 
 **Files:**
-- Create: `scripts/extend-fixture-v1.3.ts` (one-shot, retained as a small utility for future fixture migrations).
+- Create: `scripts/extend-fixture-v0.4.0.ts` (one-shot, retained as a small utility for future fixture migrations).
 - Modify: `scripts/fixtures/replay-nzqn-nzwn.jsonl` (in place).
 
-The NZQN fixture was recorded before v1.3 added `heading.true`, `track.true`, and `altitude.indicated`. Without real values, the magnetic-vs-true map plane-icon bug fix can't be visually verified against the replay (the backfill in Task 5 sets `true = magnetic`, hiding the very delta we want to test). EDDB→LIPZ stays untouched — magvar there is too small (~5°) for the synthesis to be visually meaningful.
+The NZQN fixture was recorded before v0.4.0 added `heading.true`, `track.true`, and `altitude.indicated`. Without real values, the magnetic-vs-true map plane-icon bug fix can't be visually verified against the replay (the backfill in Task 5 sets `true = magnetic`, hiding the very delta we want to test). EDDB→LIPZ stays untouched — magvar there is too small (~5°) for the synthesis to be visually meaningful.
 
 **Synthesis:**
 
@@ -97,7 +97,7 @@ The NZQN fixture was recorded before v1.3 added `heading.true`, `track.true`, an
 
 - [ ] **Step 1: Create the extension script**
 
-Create `scripts/extend-fixture-v1.3.ts`:
+Create `scripts/extend-fixture-v0.4.0.ts`:
 
 ```ts
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -131,7 +131,7 @@ console.log(`extended ${extended} lines in ${path} (magvar=${MAGVAR_DEG}°, alt 
 - [ ] **Step 2: Run the script against the NZQN fixture**
 
 ```bash
-npx tsx scripts/extend-fixture-v1.3.ts scripts/fixtures/replay-nzqn-nzwn.jsonl
+npx tsx scripts/extend-fixture-v0.4.0.ts scripts/fixtures/replay-nzqn-nzwn.jsonl
 ```
 
 Expected output: `extended 5386 lines in .../replay-nzqn-nzwn.jsonl (magvar=22°, alt offset=-100ft)`
@@ -147,12 +147,12 @@ Expected: `heading` has both `magnetic` and `true` (differing by ~22°), `track.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add scripts/extend-fixture-v1.3.ts scripts/fixtures/replay-nzqn-nzwn.jsonl
+git add scripts/extend-fixture-v0.4.0.ts scripts/fixtures/replay-nzqn-nzwn.jsonl
 git commit -m "fixtures: synthesize heading.true / track.true / altitude.indicated for NZQN
 
-Pre-v1.3 recording lacked the new SimVar fields. Extension synthesizes
+Pre-v0.4.0 recording lacked the new SimVar fields. Extension synthesizes
 them with magvar=+22°E (NZQN region) and a -100ft indicated offset so
-v1.3's true-vs-magnetic and indicated-vs-MSL plumbing is visibly
+v0.4.0's true-vs-magnetic and indicated-vs-MSL plumbing is visibly
 testable against this replay.
 
 EDDB→LIPZ stays unmodified (magvar ~5°E is too small to be visible);
@@ -207,8 +207,8 @@ Does Simbrief's OFP expose hard waypoint constraints cleanly per-fix in the navl
 [paste the relevant key list and a sample fix object]
 
 ## Decision
-- [If CLEAN]: Extract `altConstraint` / `speedConstraint` in v1.3 (Task 4 + later rendering).
-- [If NOT CLEAN]: Defer to v1.4. Skip the constraint-related sub-steps in Task 4 and skip the (later, conditional) rendering work.
+- [If CLEAN]: Extract `altConstraint` / `speedConstraint` in v0.4.0 (Task 4 + later rendering).
+- [If NOT CLEAN]: Defer to v0.5.0. Skip the constraint-related sub-steps in Task 4 and skip the (later, conditional) rendering work.
 ```
 
 - [ ] **Step 4: Commit the note**
@@ -218,7 +218,7 @@ git add docs/notes/spike-waypoint-constraints.md
 git commit -m "docs: spike — Simbrief waypoint constraint availability
 
 Outcome: [CLEAN | NOT CLEAN]. [One-line evidence summary.]
-Decision recorded; gates v1.3 Task 4 sub-steps."
+Decision recorded; gates v0.4.0 Task 4 sub-steps."
 ```
 
 ---
@@ -328,7 +328,7 @@ Expected: a list of errors in `aggregator.ts`, `aggregator.test.ts`, `parser.ts`
 
 ```bash
 git add shared/types.ts
-git commit -m "feat(shared): extend types for v1.3
+git commit -m "feat(shared): extend types for v0.4.0
 
 - BreadcrumbSample shape with altitude on each crumb
 - RawTelemetry: heading.true, track.true, optional altitude.indicated
@@ -759,7 +759,7 @@ export function parseSimbriefOfp(raw: unknown): FlightPlan {
 }
 ```
 
-The `Waypoint.altConstraint` / `speedConstraint` shape stays optional in `shared/types.ts` (Task 2) for forward-compat, but no parser code touches them in v1.3.
+The `Waypoint.altConstraint` / `speedConstraint` shape stays optional in `shared/types.ts` (Task 2) for forward-compat, but no parser code touches them in v0.4.0.
 
 - [ ] **Step 5: Run tests, see pass**
 
@@ -790,7 +790,7 @@ git commit -m "feat(server): Simbrief parser — blockTimeSec
   wind-adjusted gate-to-gate); falls back to times.sched_block.
   See docs/notes/spike-waypoint-constraints.md.
 - Fixture now includes named TOC / TOD waypoints (used by cruise-points).
-- Waypoint constraints deferred to v1.4 per spike outcome."
+- Waypoint constraints deferred to v0.5.0 per spike outcome."
 ```
 
 ---
@@ -923,7 +923,7 @@ In `scripts/dev-telemetry-replay.ts`, find:
 Replace with:
 
 ```ts
-  // Backfill v1.3 fields when replaying fixtures captured pre-v1.3. Older
+  // Backfill v0.4.0 fields when replaying fixtures captured pre-v0.4.0. Older
   // fixtures only have heading.magnetic; map true / track to it as a sensible
   // default. altitude.indicated stays undefined; the FE Alt row falls back
   // to MSL when indicated is absent.
@@ -1059,7 +1059,7 @@ Expected: all aggregator tests pass.
 git add server/src/state/aggregator.ts server/src/state/aggregator.test.ts
 git commit -m "feat(server): breadcrumb samples carry altitude (msl)
 
-Foundation for v1.3's altitude-coded breadcrumb gradient on the map."
+Foundation for v0.4.0's altitude-coded breadcrumb gradient on the map."
 ```
 
 ---
@@ -2466,7 +2466,7 @@ Replace with:
 ```tsx
   // Plan-driven TOC/TOD if the aggregator computed them; otherwise fall back
   // to the legacy VS/3:1 estimator. This is the only surviving fallback for
-  // the legacy estimator in v1.3.
+  // the legacy estimator in v0.4.0.
   const eteToToc = useFlightStore((s) => s.state.progress.eteToTocSec);
   const eteToTod = useFlightStore((s) => s.state.progress.eteToTodSec);
 
@@ -2875,19 +2875,19 @@ In `README.md`, find the Features bullet list and append:
 - TRK (true track) row in PositionCard alongside magnetic HDG.
 ```
 
-Also update the Stack note if you want — v1.3 doesn't add libraries; the existing v1.2 stack note still applies.
+Also update the Stack note if you want — v0.4.0 doesn't add libraries; the existing v0.3.0 stack note still applies.
 
-Also update the Documents list to include the v1.3 spec and plan:
+Also update the Documents list to include the v0.4.0 spec and plan:
 
 ```markdown
-- [v1.3 design](./docs/superpowers/specs/2026-05-01-flight-follower-v1.3-design.md) and [v1.3 plan](./docs/superpowers/plans/2026-05-01-flight-follower-v1.3.md)
+- [v0.4.0 design](./docs/superpowers/specs/2026-05-01-flight-follower-v0.4.0-design.md) and [v0.4.0 plan](./docs/superpowers/plans/2026-05-01-flight-follower-v0.4.0.md)
 ```
 
 - [ ] **Step 2: Commit**
 
 ```bash
 git add README.md
-git commit -m "docs: README — v1.3 features and references
+git commit -m "docs: README — v0.4.0 features and references
 
 Adds gradient breadcrumb, TOC/TOD markers, skip-waypoint, progress
 timeline, live ETA, alternate marker, and TRK to the feature list."
@@ -2895,31 +2895,31 @@ timeline, live ETA, alternate marker, and TRK to the feature list."
 
 ---
 
-## Task 21: Backlog updates — mark v1.3 items as shipped
+## Task 21: Backlog updates — mark v0.4.0 items as shipped
 
 **Files:**
 - Modify: `docs/backlog.md`
 
-- [ ] **Step 1: Move the v1.3 in-progress block into the shipped section**
+- [ ] **Step 1: Move the v0.4.0 in-progress block into the shipped section**
 
 In `docs/backlog.md`:
 
-Find the `### v1.3 (in progress)` heading and rewrite the entire scheduled block. Move v1.3 below the v1.2 line in the "Already shipped" section:
+Find the `### v0.4.0 (in progress)` heading and rewrite the entire scheduled block. Move v0.4.0 below the v0.3.0 line in the "Already shipped" section:
 
 ```markdown
-- **v1.3** ✅ — flight progress release: breadcrumb altitude gradient, plan-driven TOC/TOD markers + ETE countdown, skip-waypoint with auto-resync, origin → destination progress timeline, live ETA, alternate on map, FlightPlanCard glyph progress overlay. Polish: FlightPlanCard collapse/wrap, map mode promotion, true-vs-magnetic plane-icon rotation, altitude SimVar audit, TRK row, min-zoom, light-mode tooltip, times vocabulary alignment. Spike outcome: [CLEAN | NOT CLEAN] — [link to docs/notes/spike-waypoint-constraints.md].
+- **v0.4.0** ✅ — flight progress release: breadcrumb altitude gradient, plan-driven TOC/TOD markers + ETE countdown, skip-waypoint with auto-resync, origin → destination progress timeline, live ETA, alternate on map, FlightPlanCard glyph progress overlay. Polish: FlightPlanCard collapse/wrap, map mode promotion, true-vs-magnetic plane-icon rotation, altitude SimVar audit, TRK row, min-zoom, light-mode tooltip, times vocabulary alignment. Spike outcome: [CLEAN | NOT CLEAN] — [link to docs/notes/spike-waypoint-constraints.md].
 ```
 
-Remove the `### v1.3 (in progress)` block entirely. The file's structure is now: shipped → v1.4 → v1.5 → v1.6+ → carryovers (unchanged).
+Remove the `### v0.4.0 (in progress)` block entirely. The file's structure is now: shipped → v0.5.0 → v0.6.0 → v0.7+ → carryovers (unchanged).
 
 - [ ] **Step 2: Commit**
 
 ```bash
 git add docs/backlog.md
-git commit -m "docs: backlog — mark v1.3 as shipped
+git commit -m "docs: backlog — mark v0.4.0 as shipped
 
-Moves the v1.3 entry into the shipped section. Forward roadmap
-(v1.4 personalization, v1.5 responsive, v1.6+ platform) unchanged."
+Moves the v0.4.0 entry into the shipped section. Forward roadmap
+(v0.5.0 personalization, v0.6.0 responsive, v0.7+ platform) unchanged."
 ```
 
 ---
@@ -2977,7 +2977,7 @@ Repeat with `scripts/fixtures/replay-nzqn-nzwn.jsonl` and verify:
 - [ ] FlightPlanCard expanded wraps fix names cleanly (`RUDAP` whole, never `RUD-AP`).
 - [ ] Zooming out of Overview promotes to Manual; clicking Overview when active is a no-op.
 - [ ] Min-zoom prevents tile-grid wraparound.
-- [ ] Light-mode map tooltip is more legible than v1.2.
+- [ ] Light-mode map tooltip is more legible than v0.3.0.
 - [ ] Glyph progress overlay reads cleanly mid-flight (decide option C vs B; if B is better, run the Task 18 step 3 swap and commit).
 
 - [ ] **Step 5: Final commit if any tweaks**
@@ -2987,13 +2987,13 @@ If the visual review surfaced minor tweaks (tooltip opacity number, glyph option
 - [ ] **Step 6: Push the branch**
 
 ```bash
-git push -u origin feat/v1.3-implementation
+git push -u origin feat/v0.4.0-implementation
 ```
 
-Open a PR against `main` titled `flight-follower v1.3 — flight progress`.
+Open a PR against `main` titled `flight-follower v0.4.0 — flight progress`.
 
 ---
 
 ## Done
 
-End of plan. v1.3 ships with all flight-progress features, the targeted bug-fix pass, two new fixtures committed (Task 0 / pre-plan), and updated docs.
+End of plan. v0.4.0 ships with all flight-progress features, the targeted bug-fix pass, two new fixtures committed (Task 0 / pre-plan), and updated docs.

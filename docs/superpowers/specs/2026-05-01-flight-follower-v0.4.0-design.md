@@ -1,18 +1,18 @@
-# Flight Follower — v1.3 Design Spec
+# Flight Follower — v0.4.0 Design Spec
 
 - **Date:** 2026-05-01
 - **Status:** Approved, ready for implementation planning
-- **Scope:** v1.3 (flight progress — planned vs actual, with a focused polish & bug pass)
+- **Scope:** v0.4.0 (flight progress — planned vs actual, with a focused polish & bug pass)
 - **Predecessors:**
-  - [`2026-04-24-flight-follower-design.md`](./2026-04-24-flight-follower-design.md) — v1
-  - [`2026-04-25-flight-follower-v1.1-design.md`](./2026-04-25-flight-follower-v1.1-design.md) — v1.1
-  - [`2026-04-25-flight-follower-v1.2-design.md`](./2026-04-25-flight-follower-v1.2-design.md) — v1.2
+  - [`2026-04-24-flight-follower-v0.1.0-design.md`](./2026-04-24-flight-follower-v0.1.0-design.md) — v0.1.0
+  - [`2026-04-25-flight-follower-v0.2.0-design.md`](./2026-04-25-flight-follower-v0.2.0-design.md) — v0.2.0
+  - [`2026-04-25-flight-follower-v0.3.0-design.md`](./2026-04-25-flight-follower-v0.3.0-design.md) — v0.3.0
 
 ## 1. Overview
 
-v1.3 is the **flight progress** release: it makes the panel and the map agree on *where the aircraft is in the plan, where it's going next, and when it'll get there*. It introduces a breadcrumb altitude gradient, plan-driven TOC/TOD markers, manual skip-waypoint controls, an origin → destination progress timeline, a live ETA, and an alternate-on-map indicator. Bundled in is a focused polish pass on the bugs that touch the same surfaces (FlightPlanCard layout, map mode behavior, altitude/heading correctness, times vocabulary).
+v0.4.0 is the **flight progress** release: it makes the panel and the map agree on *where the aircraft is in the plan, where it's going next, and when it'll get there*. It introduces a breadcrumb altitude gradient, plan-driven TOC/TOD markers, manual skip-waypoint controls, an origin → destination progress timeline, a live ETA, and an alternate-on-map indicator. Bundled in is a focused polish pass on the bugs that touch the same surfaces (FlightPlanCard layout, map mode behavior, altitude/heading correctness, times vocabulary).
 
-The brief from brainstorming was **option B**: themed features + the bugs that share their surfaces, deferring UI/personalization (compact mode, settings persistence, theme-by-day-night, mobile, alert center, airline branding) to v1.4 and beyond.
+The brief from brainstorming was **option B**: themed features + the bugs that share their surfaces, deferring UI/personalization (compact mode, settings persistence, theme-by-day-night, mobile, alert center, airline branding) to v0.5.0 and beyond.
 
 The release stays surgical on protocol surface: a few additions to `RawTelemetry` and `FlightProgress`, no new WebSocket message types, no new endpoints. Most of the work lives in the frontend; the aggregator and Simbrief parser gain small, additive responsibilities.
 
@@ -26,24 +26,24 @@ The release stays surgical on protocol surface: a few additions to `RawTelemetry
 6. Render the alternate airport on the map in a distinguishing blue, with an alternate-only hover tooltip; origin and destination keep their existing fixed labels.
 7. Reveal the FlightPlanCard altitude-profile glyph progressively as the flight advances (option C: gradient stays, progress overlay shows flown portion; fall back to option B — gradient revealed only as you fly — if the overlay reads as visual noise during implementation).
 8. Fix the bugs and visual issues that share these surfaces — FlightPlanCard collapsing/wrapping, map mode promotion on user gestures, altitude SimVar correctness, map plane icon rotation at high-magvar latitudes, min-zoom limit, light-mode tooltip transparency, TRK in panel, and a times-vocabulary alignment across cards (use Simbrief block time directly).
-9. Spike (early in implementation): does Simbrief expose hard waypoint constraints (at-or-below altitudes, max IAS) cleanly enough to add to the map waypoint tooltip? If yes, ship the addition; if not, defer to v1.4.
-10. Add the two new replay fixtures (`replay-eddb-lipz.jsonl`, `replay-nzqn-nzwn.jsonl`) so v1.3 can be developed and verified against real flights with a cruise phase, a southern-hemisphere flight, and a go-around.
+9. Spike (early in implementation): does Simbrief expose hard waypoint constraints (at-or-below altitudes, max IAS) cleanly enough to add to the map waypoint tooltip? If yes, ship the addition; if not, defer to v0.5.0.
+10. Add the two new replay fixtures (`replay-eddb-lipz.jsonl`, `replay-nzqn-nzwn.jsonl`) so v0.4.0 can be developed and verified against real flights with a cruise phase, a southern-hemisphere flight, and a go-around.
 
-## 3. Non-goals (v1.3)
+## 3. Non-goals (v0.4.0)
 
-- No card compact/extended modes, no per-user settings persistence, no theme-by-day-night, no airline icons or branding, no plane-icon track-vs-heading toggle. These are scheduled for v1.4.
-- No mobile/responsive layout, no alert center, no LAN-IP banner, no app-mode header treatment. Scheduled for v1.5.
-- No actual OUT/OFF/ON/IN computation from the on-ground boolean. The "block time mismatch" bug is fixed by using Simbrief's plan value directly; the larger actuals state machine is parked for v1.4.
+- No card compact/extended modes, no per-user settings persistence, no theme-by-day-night, no airline icons or branding, no plane-icon track-vs-heading toggle. These are scheduled for v0.5.0.
+- No mobile/responsive layout, no alert center, no LAN-IP banner, no app-mode header treatment. Scheduled for v0.6.0.
+- No actual OUT/OFF/ON/IN computation from the on-ground boolean. The "block time mismatch" bug is fixed by using Simbrief's plan value directly; the larger actuals state machine is parked for v0.5.0.
 - No flight phase classifier, no AUTO map mode, no map style switcher, no layers panel, no unit toggling. Backlog.
-- No Cesium 3D, no FBW FMC reading, no flight logging, no Electron packaging. v1.6+ candidates.
+- No Cesium 3D, no FBW FMC reading, no flight logging, no Electron packaging. v0.7+ candidates.
 - No new WebSocket message types or REST endpoints — all new data flows through the existing `state` payload.
 - No backwards-compatibility migration. Server and client deploy together (single-user LAN app); the few non-additive type changes in § 8 (`heading` shape, `track` field, `breadcrumb` sample shape) ship in lockstep.
 
-## 4. v1.3 features
+## 4. v0.4.0 features
 
 ### 4.1 Breadcrumb altitude gradient
 
-The breadcrumb trail rendered by `web/src/components/Map/BreadcrumbTrail.tsx` is currently a single-color polyline. v1.3 colors each segment by altitude using a shared palette mapping function.
+The breadcrumb trail rendered by `web/src/components/Map/BreadcrumbTrail.tsx` is currently a single-color polyline. v0.4.0 colors each segment by altitude using a shared palette mapping function.
 
 **Palette source.** A new module `web/src/lib/altitudePalette.ts` exports:
 
@@ -58,11 +58,11 @@ The current FlightPlanCard glyph derives its gradient inline; that derivation mo
 
 **Rendering.** `BreadcrumbTrail.tsx` switches from a single `<Polyline>` to one `<Polyline>` per segment between consecutive samples, each with `pathOptions.color = altitudeToColor(sample.altitude.msl)`. To keep DOM and CPU sane, segments are batched: consecutive samples whose altitudes fall in the same palette bucket share a single polyline. Bucket boundaries match the palette stops, so visual continuity matches the FlightPlanCard glyph.
 
-**Sample altitude on breadcrumb.** Today, the breadcrumb store is a list of `LatLon`. v1.3 extends each entry to `{ lat: number; lon: number; altMsl: number }`. The aggregator (`server/src/state/aggregator.ts`) appends the altitude when it appends each breadcrumb point. `shared/types.ts` updates `FlightState.breadcrumb` accordingly.
+**Sample altitude on breadcrumb.** Today, the breadcrumb store is a list of `LatLon`. v0.4.0 extends each entry to `{ lat: number; lon: number; altMsl: number }`. The aggregator (`server/src/state/aggregator.ts`) appends the altitude when it appends each breadcrumb point. `shared/types.ts` updates `FlightState.breadcrumb` accordingly.
 
 ### 4.2 TOC / TOD — plan-driven markers and countdown rework
 
-**Computation (server-side).** Simbrief publishes **explicit TOC and TOD waypoints** in the navlog (idents literally `"TOC"` and `"TOD"`). The current map already renders them as ordinary fixes; v1.3 promotes them to first-class `tocPosition` / `todPosition` fields and uses them for the countdown.
+**Computation (server-side).** Simbrief publishes **explicit TOC and TOD waypoints** in the navlog (idents literally `"TOC"` and `"TOD"`). The current map already renders them as ordinary fixes; v0.4.0 promotes them to first-class `tocPosition` / `todPosition` fields and uses them for the countdown.
 
 A new pure module `server/src/route-math/cruise-points.ts` exports:
 
@@ -97,20 +97,20 @@ eteToTodSec: number | null;   // null when past TOD, no plan, or no GS
 
 **Map markers.** A new layer `web/src/components/Map/CruisePoints.tsx` renders TOC and TOD markers at their geographic positions whenever `tocPosition` / `todPosition` is non-null — markers stay visible for the entire flight (the user wants to see *where* TOC/TOD were even after passing). Distinct icons (TOC ↗ chevron, TOD ↘ chevron) so they're visually distinguishable from regular waypoints. Hidden only when the position itself is `null` (no plan, no detection).
 
-**Clock card countdown rework.** The Clock card (`web/src/components/DataPanel/ClockCard.tsx`) currently estimates TOC from VS and TOD via 3:1. v1.3 swaps both for the new ETE values:
+**Clock card countdown rework.** The Clock card (`web/src/components/DataPanel/ClockCard.tsx`) currently estimates TOC from VS and TOD via 3:1. v0.4.0 swaps both for the new ETE values:
 
 ```
 TOC in 4 min   (was: VS-based estimate)
 TOD in 47 min  (was: 3:1 rule)
 ```
 
-**Fallback.** If `tocPosition` or `todPosition` is `null` (no plan loaded), the Clock card falls back to the existing VS / 3:1 estimation. This is the only place the legacy estimator survives in v1.3 — it is a graceful degradation, not the primary path.
+**Fallback.** If `tocPosition` or `todPosition` is `null` (no plan loaded), the Clock card falls back to the existing VS / 3:1 estimation. This is the only place the legacy estimator survives in v0.4.0 — it is a graceful degradation, not the primary path.
 
 ### 4.3 Skip-waypoint / navigation arrows
 
 **Frontend-only override.** Skip-waypoint state lives entirely in the FE store, not on the server. Reasoning: the server's `progress.nextWaypoint` continues to follow auto-selection (distance-based), and our auto-resync clears the override on plan reload — so the override never gets stuck server-side. Keeping it FE-only avoids new WebSocket message types and keeps the protocol additive.
 
-If we later add multi-device consistency requirements (the override syncs across PC + tablet open simultaneously), promoting it to server state is a clean upgrade — the existing `progress.nextWaypoint` becomes the resolved value and a new `progress.manualNextIndex: number | null` joins it. v1.3 ships the FE-only version.
+If we later add multi-device consistency requirements (the override syncs across PC + tablet open simultaneously), promoting it to server state is a clean upgrade — the existing `progress.nextWaypoint` becomes the resolved value and a new `progress.manualNextIndex: number | null` joins it. v0.4.0 ships the FE-only version.
 
 A new field on `useFlightStore` (or a sibling `useNavStore` if the flight store is already busy):
 
@@ -169,7 +169,7 @@ This eliminates the "reload plan → tracking jumps back to first waypoint and s
 
 ### 4.5 Live ETA from `eteToDestSec`
 
-TripCard's ETA row currently displays a value derived from Simbrief's `scheduledIn` (STA). v1.3 changes the display priority:
+TripCard's ETA row currently displays a value derived from Simbrief's `scheduledIn` (STA). v0.4.0 changes the display priority:
 
 1. If `progress.eteToDestSec` is present, ETA = `now + eteToDestSec`, formatted as a UTC time. Label: "ETA (live)".
 2. Otherwise, fall back to Simbrief `scheduledIn` if present. Label: "ETA (sched)".
@@ -177,7 +177,7 @@ TripCard's ETA row currently displays a value derived from Simbrief's `scheduled
 
 The label distinguishes the two so the user knows whether they're seeing a live or planned value. Format: HH:MMz.
 
-**Block time fix.** TripCard's "block time" row currently computes a derived value from `scheduledOut` and `scheduledIn`. v1.3 surfaces Simbrief's block time directly:
+**Block time fix.** TripCard's "block time" row currently computes a derived value from `scheduledOut` and `scheduledIn`. v0.4.0 surfaces Simbrief's block time directly:
 
 - Add `blockTimeSec?: number` to `FlightPlan` (parser extracts from Simbrief's `times.est_time_enroute` or `times.sched_time_enroute` — whichever Simbrief uses for block; verify during implementation).
 - TripCard reads `plan.blockTimeSec` directly. No derivation.
@@ -205,7 +205,7 @@ The "airport tooltip on hover" idea applies only to the alternate. Origin and de
 
 ### 4.7 FlightPlanCard glyph progress reveal (option C, fallback B)
 
-Today the FlightPlanCard altitude-profile glyph shows a full gradient across the entire planned route. v1.3 adds a progress overlay:
+Today the FlightPlanCard altitude-profile glyph shows a full gradient across the entire planned route. v0.4.0 adds a progress overlay:
 
 **Option C (default).** The full gradient stays. A semi-transparent mask overlays the *unflown* portion (e.g. 40% opacity gray), so the flown portion reads as more saturated. As the flight progresses, the mask shrinks toward the destination side. The progress percentage is the same value used by the timeline bar (§ 4.4) — `1 - distanceToDestNm / totalDistanceNm`.
 
@@ -275,7 +275,7 @@ heading: { magnetic: number; true: number };
 | `PositionCard` HDG row | `magnetic` | Mirrors cockpit. |
 | `MotionCard` (and any other panel HDG display) | `magnetic` | Same. |
 | `AircraftMarker` (map plane icon rotation) | `true` | Map renders in true geographic bearings. |
-| `WindCompass` arrow + heading triangle | mixed: arrows showing aircraft heading on the compass card use `magnetic` (compass mimics cockpit instrument), but if any element is overlaid on the map it uses `true`. v1.2 wind compass is a panel-only widget, so all-magnetic. Verify during implementation. |
+| `WindCompass` arrow + heading triangle | mixed: arrows showing aircraft heading on the compass card use `magnetic` (compass mimics cockpit instrument), but if any element is overlaid on the map it uses `true`. v0.3.0 wind compass is a panel-only widget, so all-magnetic. Verify during implementation. |
 
 **Track row addition.** While auditing heading, add a `track` field too:
 
@@ -283,7 +283,7 @@ heading: { magnetic: number; true: number };
 track: { true: number };  // GPS_GROUND_TRUE_TRACK or PLANE_HEADING_DEGREES_GYRO
 ```
 
-This enables (a) the new TRK row in PositionCard or MotionCard (§ 5.6), and (b) future track-vs-heading icon toggle (v1.4).
+This enables (a) the new TRK row in PositionCard or MotionCard (§ 5.6), and (b) future track-vs-heading icon toggle (v0.5.0).
 
 ### 5.6 TRK row in panel
 
@@ -312,7 +312,7 @@ Already covered in § 4.5. Listed here for the polish-pass overview only.
 **Decision rule.**
 
 - **Cleanly available** (one or two fields per waypoint with parseable values) → extend `Waypoint` with optional `altConstraint?` and `speedConstraint?` fields, parse in `server/src/simbrief/parser.ts`, and add a Leaflet `<Tooltip>` on waypoint markers in `PlannedRoute.tsx` showing constraints when present.
-- **Not cleanly available** (text remarks, SID/STAR-embedded) → defer to v1.4 with a note in the backlog. No partial implementation.
+- **Not cleanly available** (text remarks, SID/STAR-embedded) → defer to v0.5.0 with a note in the backlog. No partial implementation.
 
 The decision happens within the first implementation task and gates whether the small constraint-rendering work is in scope.
 
@@ -321,7 +321,7 @@ The decision happens within the first implementation task and gates whether the 
 Two new fixtures land in `scripts/fixtures/` next to `replay-eddb-circuit.jsonl`:
 
 - `replay-eddb-lipz.jsonl` — Berlin → Trieste. Real A→B with a meaningful cruise phase. Primary fixture for verifying breadcrumb gradient, TOC/TOD markers, progress timeline, and live ETA.
-- `replay-nzqn-nzwn.jsonl` — Queenstown → Wellington. Far-southern hemisphere flight with a go-around. Primary fixture for verifying the heading icon rotation fix (high magvar latitude) and as a future test case for go-around handling (parked v1.6+).
+- `replay-nzqn-nzwn.jsonl` — Queenstown → Wellington. Far-southern hemisphere flight with a go-around. Primary fixture for verifying the heading icon rotation fix (high magvar latitude) and as a future test case for go-around handling (parked v0.7+).
 
 No new tooling — both work with the existing `dev:replay` harness:
 
@@ -337,7 +337,7 @@ In `shared/types.ts`:
 
 ```ts
 export type RawTelemetry = {
-  // …existing v1.2 fields…
+  // …existing v0.3.0 fields…
   heading: { magnetic: number; true: number };       // was { magnetic: number }
   track: { true: number };                            // new
   altitude: { msl: number; indicated?: number };     // new optional
@@ -386,7 +386,7 @@ No new WebSocket message types. No new REST endpoints. The Simbrief parser absor
 ### Modified (web)
 
 - `web/src/components/Map/BreadcrumbTrail.tsx` (per-segment color + altitude consumption)
-- `web/src/components/Map/AircraftMarker.tsx` (rotation uses `heading.true`; CSS variable already in place from v1.2)
+- `web/src/components/Map/AircraftMarker.tsx` (rotation uses `heading.true`; CSS variable already in place from v0.3.0)
 - `web/src/components/Map/Map.tsx` (`minZoom`, alternate marker layer, ignore-flag pattern for user-gesture mode promotion)
 - `web/src/components/Map/MapController.tsx` (user-gesture detection; mode promotion)
 - `web/src/components/Map/PlannedRoute.tsx` (waypoint tooltip if Spike succeeds)
@@ -455,30 +455,30 @@ Per the project pattern: server gets unit tests, frontend is verified manually a
 - FlightPlanCard expanded wraps fix names cleanly (`RUDAP` whole, never `RUD-AP`).
 - Zooming out of Overview promotes to Manual; clicking Overview when active is a no-op.
 - Min-zoom prevents tile-grid wraparound.
-- Light-mode map tooltip is more legible than v1.2.
+- Light-mode map tooltip is more legible than v0.3.0.
 
 ## 11. Risks
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
 | TOC/TOD detection misfires on unusual plans (no cruise level-off, all-`plannedAltitude` zero, missing values) | Medium | Aggressive null-handling: any missing input → `null` position → marker hidden, Clock card falls back to legacy estimator. Unit-test the detection functions against several plan shapes. |
-| Plan-derived TOC/TOD looks wrong because the aircraft isn't following the plan (off-track, slower climb) | Medium | The countdown formula is `distance to point ÷ current GS` — it self-corrects. If the user reports systematic mismatch in real flights, revisit in v1.4 with hybrid logic. Don't over-engineer now. |
-| Per-segment polylines for the breadcrumb gradient become too many DOM nodes on long flights | Low–Medium | Bucket consecutive samples whose altitude falls in the same palette stop into a single polyline. Cap visible breadcrumb length if needed (already a v1 concern; not regressed). |
+| Plan-derived TOC/TOD looks wrong because the aircraft isn't following the plan (off-track, slower climb) | Medium | The countdown formula is `distance to point ÷ current GS` — it self-corrects. If the user reports systematic mismatch in real flights, revisit in v0.5.0 with hybrid logic. Don't over-engineer now. |
+| Per-segment polylines for the breadcrumb gradient become too many DOM nodes on long flights | Low–Medium | Bucket consecutive samples whose altitude falls in the same palette stop into a single polyline. Cap visible breadcrumb length if needed (already a v0.1.0 concern; not regressed). |
 | `BreadcrumbSample` shape change breaks an in-flight session that loaded an older client/server pair | Low | Single-user app, server and client always deployed together. Document the change in the spec; no migration path needed. |
 | Skip-waypoint state diverges between server and client because it's FE-only | Low | The server's `progress.nextWaypoint` continues to follow auto-selection; the FE override only changes display. No protocol divergence. |
 | Light-mode tooltip opacity change overshoots and looks heavy | Low | CSS-only tweak, iterated visually during implementation. |
 | Altitude SimVar swap changes panel readings noticeably mid-development, surprising the user | Low | Document in `altitude-vocabulary.md`; verify against the cockpit altimeter on the next live test. |
 | Simbrief `est_time_enroute` vs `sched_time_enroute` ambiguity for block time | Medium | Inspect a real OFP during the spike; pick the field whose value matches the OFP's printed block time; document the choice. |
-| Spike for waypoint constraints reveals partial data (e.g. only on some fixes) | Medium | Decision rule already specified: render only when present; defer to v1.4 if irregular enough to confuse users. |
+| Spike for waypoint constraints reveals partial data (e.g. only on some fixes) | Medium | Decision rule already specified: render only when present; defer to v0.5.0 if irregular enough to confuse users. |
 | The progress overlay (option C) on the FlightPlanCard glyph reads as visual noise | Medium | Fall-back option B is pre-decided; switch is a single render-path swap. |
 | `manualNextIndex` persists into a stale plan via sessionStorage | Low | Auto-resync on `plan.fetchedAt` change handles this; defensive bounds check on read. |
 
 ## 12. Backlog updates
 
-After v1.3 ships, mark the following as completed-from-backlog so the file stays accurate:
+After v0.4.0 ships, mark the following as completed-from-backlog so the file stays accurate:
 
 - Breadcrumb altitude-coded gradient
-- Plan-driven TOC/TOD detection (includes the v1.2-polish-backlog item)
+- Plan-driven TOC/TOD detection (includes the v0.3.0-polish-backlog item)
 - TOC/TOD markers on the map
 - Skip-waypoint mechanism
 - Origin → destination progress timeline bar
@@ -486,36 +486,36 @@ After v1.3 ships, mark the following as completed-from-backlog so the file stays
 - Block-time mismatch (using STA) — fixed by direct use of `plan.blockTimeSec`
 - "Review the breadcrumb logic" — dropped (no longer remembered context)
 
-The `docs/backlog.md` file is updated in the same commit as this spec to reflect the new v1.4 / v1.5 / v1.6+ structure documented in § 13.
+The `docs/backlog.md` file is updated in the same commit as this spec to reflect the new v0.5.0 / v0.6.0 / v0.7+ structure documented in § 13.
 
-## 13. Out of scope (deferred to v1.4 / v1.5 / v1.6+)
+## 13. Out of scope (deferred to v0.5.0 / v0.6.0 / v0.7+)
 
 The full forward roadmap shape, agreed during this brainstorm:
 
-### v1.4 — Personalization & per-user config
+### v0.5.0 — Personalization & per-user config
 
 - Compact mode for cards.
 - Card config (enable/disable + compact/extended), persisted per user.
 - Switch plane icon color to airline color; show airline icon in FlightPlanCard and aircraft tooltip.
 - Theme auto-switch based on aircraft day/night position (reuses the day/night calc shipped for the clock glyph).
-- Plane icon track-vs-heading toggle (the *toggle* — the v1.3 fix only addresses the rotation reference bug).
+- Plane icon track-vs-heading toggle (the *toggle* — the v0.4.0 fix only addresses the rotation reference bug).
 - Move clock closer to TripCard.
-- Waypoint altitude/speed limits in tooltips (if the v1.3 spike defers it).
-- *From v1.2 polish backlog:* cost index / cruise Mach / avg forecast HD-TL on FlightPlanCard; local time at origin/destination; sunrise/sunset at destination; wind compass refinements (proportional arrow, HD/TL color cue, instrument-glass feel); parking-brake indicator.
+- Waypoint altitude/speed limits in tooltips (if the v0.4.0 spike defers it).
+- *From v0.3.0 polish backlog:* cost index / cruise Mach / avg forecast HD-TL on FlightPlanCard; local time at origin/destination; sunrise/sunset at destination; wind compass refinements (proportional arrow, HD/TL color cue, instrument-glass feel); parking-brake indicator.
 - Clock fallback to real time after a sim-disconnect grace period.
 - Actuals: compute OUT/OFF/ON/IN times from the on-ground boolean (the deferred half of "block time").
 
-### v1.5 — Multi-device / Responsive
+### v0.6.0 — Multi-device / Responsive
 
 - Mobile-friendly layout.
 - Alert center (replaces inline alerts).
 - LAN IP shown on startup banner / settings panel.
 - Header treatment for app-mode (kiosk / Electron-ready).
 
-### v1.6+ — Platform & data expansion
+### v0.7+ — Platform & data expansion
 
-- *From v1.1 backlog:* layers panel, unit switching, map style switcher, flight phase classifier, live METAR, live other-aircraft, FE-controlled replay module.
-- *From v1 roadmap:* flight logging, 3D / Cesium view, FBW A320 FMC reading, Electron packaging.
+- *From v0.2.0 backlog:* layers panel, unit switching, map style switcher, flight phase classifier, live METAR, live other-aircraft, FE-controlled replay module.
+- *From v0.1.0 roadmap:* flight logging, 3D / Cesium view, FBW A320 FMC reading, Electron packaging.
 - AUTO map mode (zoom by flight phase) — depends on the phase classifier.
 - Airport elevation data for FlightPlanCard glyph.
 - Go-arounds / diverted flights handling — fixture-driven via NZQN→NZWN.

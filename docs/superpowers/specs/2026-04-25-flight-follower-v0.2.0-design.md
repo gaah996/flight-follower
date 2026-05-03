@@ -1,15 +1,15 @@
-# Flight Follower — v1.1 Design Spec
+# Flight Follower — v0.2.0 Design Spec
 
 - **Date:** 2026-04-25
 - **Status:** Approved, ready for implementation planning
-- **Scope:** v1.1 (bugs and quick polish on top of shipped v1)
-- **Predecessor:** [`2026-04-24-flight-follower-design.md`](./2026-04-24-flight-follower-design.md)
+- **Scope:** v0.2.0 (bugs and quick polish on top of shipped v0.1.0)
+- **Predecessor:** [`2026-04-24-flight-follower-v0.1.0-design.md`](./2026-04-24-flight-follower-v0.1.0-design.md)
 
 ## 1. Overview
 
-v1.1 is a focused polish-and-bugfix release on top of shipped v1. It fixes a handful of irritations the user hit in real flights and lands small, isolated UX wins that do not depend on a redesign. None of the items require a styling overhaul or a component library — those land in v1.2.
+v0.2.0 is a focused polish-and-bugfix release on top of shipped v1. It fixes a handful of irritations the user hit in real flights and lands small, isolated UX wins that do not depend on a redesign. None of the items require a styling overhaul or a component library — those land in v0.3.0.
 
-The release is intentionally narrow. Everything that touches the visual system (component library, dark mode, panel layout, compass widget, map style, flight-info card) is deferred to v1.2 so we can do that pass with one coherent design eye instead of restyling twice. Everything that builds on the planned-route mechanics (skip-waypoint, TOC/TOD markers, altitude-coded breadcrumb, progress timeline) is deferred to v1.3 so it sits on top of v1.2's foundation.
+The release is intentionally narrow. Everything that touches the visual system (component library, dark mode, panel layout, compass widget, map style, flight-info card) is deferred to v0.3.0 so we can do that pass with one coherent design eye instead of restyling twice. Everything that builds on the planned-route mechanics (skip-waypoint, TOC/TOD markers, altitude-coded breadcrumb, progress timeline) is deferred to v0.4.0 so it sits on top of v0.3.0's foundation.
 
 ## 2. Goals
 
@@ -25,15 +25,15 @@ The release is intentionally narrow. Everything that touches the visual system (
 
 Plus one developer-experience improvement that piggybacks on the recording fix: a forward-only seek for the replay harness so the long pre-flight setup can be skipped during dev.
 
-## 3. Non-goals (v1.1)
+## 3. Non-goals (v0.2.0)
 
-- No component library, no dark mode, no theme tokens — all of that is v1.2.
+- No component library, no dark mode, no theme tokens — all of that is v0.3.0.
 - No layout redesign of `DataPanel` — it stays as it is; only existing cards change content.
 - No new map controls (no map-style switcher, no layers panel).
 - No changes to the WebSocket message shape, the REST surface, or the breadcrumb / progress / view stores beyond the persistence add-on.
 - No frontend UI for recording status — clear server logs are enough for now.
 - No backward seek in replay; only `REPLAY_START_MS`. A full FE-driven replay module is a v2/v3 candidate (see `docs/backlog.md`).
-- No live ETA — that lands in v1.3 next to the timeline bar.
+- No live ETA — that lands in v0.4.0 next to the timeline bar.
 
 ## 4. Items, with approach
 
@@ -51,7 +51,7 @@ This filter is server-side so we never broadcast 0,0 frames, never breadcrumb th
 
 Replace the unicode `✈` glyph in `web/src/components/Map/AircraftMarker.tsx` with a small inline SVG that points **north at 0°**. Apply `transform: rotate(${heading}deg)` directly — no offset.
 
-The SVG is a simple north-pointing aircraft silhouette, ~24 px square, currentColor-fillable so v1.2's theme can recolor it without code changes.
+The SVG is a simple north-pointing aircraft silhouette, ~24 px square, currentColor-fillable so v0.3.0's theme can recolor it without code changes.
 
 ### 4.3 Position decimal precision (frontend)
 
@@ -197,13 +197,13 @@ Per project pattern: server gets unit tests, frontend is verified manually again
 | MSFS does not expose a meaningful `ZULU YEAR/MONTH/DAY` when the sim is on the menu | High | Field is optional; FE falls back to wall clock. Pre-spawn filter (§4.1) covers most of this anyway. |
 | Some Simbrief OFPs do not include airport `name` | Low | Field is optional; render falls back to ICAO only. |
 | Some Simbrief OFPs do not include `times.sched_out` / `times.sched_in` | Low | Fields are optional; render `—`. |
-| Heartbeat log at 30 s is too noisy in long flights | Low | Easy tuning later — change interval. We accept "welcome noise" for v1.1. |
+| Heartbeat log at 30 s is too noisy in long flights | Low | Easy tuning later — change interval. We accept "welcome noise" for v0.2.0. |
 | Removing the `zoomstart` handler creates an unforeseen mode-flip bug | Low | Manual test via replay covers the standard cases; if a corner appears we add it back behind a small heuristic. |
 
 ## 10. Out of scope (deferred)
 
 Captured fully in `docs/backlog.md`. Summarized:
 
-- **v1.2** — component library, dark mode, panel layout / grouping, wind compass, map style refinement, flight-info card.
-- **v1.3** — breadcrumb altitude gradient, skip-waypoint, TOC/TOD markers, progress timeline, live ETA.
+- **v0.3.0** — component library, dark mode, panel layout / grouping, wind compass, map style refinement, flight-info card.
+- **v0.4.0** — breadcrumb altitude gradient, skip-waypoint, TOC/TOD markers, progress timeline, live ETA.
 - **Backlog** — layers panel, unit toggling, map style switcher, flight phase classifier, METAR, other aircraft, full FE-controlled replay module.

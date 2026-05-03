@@ -4,34 +4,34 @@ Items raised during brainstorming sessions that we explicitly chose **not** to d
 
 ## Scheduled in upcoming versions
 
-These are not "deferred" — they are scheduled. The structure below was set during the v1.3 brainstorm and is re-checked at the start of each new version's brainstorm.
+These are not "deferred" — they are scheduled. The structure below was set during the v0.4.0 brainstorm and is re-checked at the start of each new version's brainstorm.
 
-### v1.4 — Personalization & per-user config
+### v0.5.0 — Personalization & per-user config
 
 - Compact mode for cards.
 - Card config (enable/disable + compact/extended), persisted per user.
 - Switch plane icon color to airline color; airline icon in FlightPlanCard and aircraft tooltip.
 - Theme auto-switch based on aircraft day/night position.
-- Plane icon track-vs-heading toggle (the toggle UI; the v1.3 fix only addresses the rotation reference bug).
+- Plane icon track-vs-heading toggle (the toggle UI; the v0.4.0 fix only addresses the rotation reference bug).
 - Move clock closer to TripCard.
-- Waypoint altitude/speed limits in tooltips (if the v1.3 spike defers it).
-- *From v1.2 polish backlog:* cost index / cruise Mach / avg forecast HD-TL on FlightPlanCard; local time at origin/destination; sunrise/sunset at destination; wind compass refinements (proportional arrow, HD/TL color cue, instrument-glass feel); parking-brake indicator.
+- Waypoint altitude/speed limits in tooltips (if the v0.4.0 spike defers it).
+- *From v0.3.0 polish backlog:* cost index / cruise Mach / avg forecast HD-TL on FlightPlanCard; local time at origin/destination; sunrise/sunset at destination; wind compass refinements (proportional arrow, HD/TL color cue, instrument-glass feel); parking-brake indicator.
 - Clock fallback to real time after a sim-disconnect grace period.
 - Actuals: compute OUT/OFF/ON/IN from the on-ground boolean.
-- *Polish from v1.3 retro:* prevent airport tooltip overlap with the route line; restyle Fetch button (soft blue, full-width, inside Trip section).
-- *Architectural rework from v1.3 retro:* multi-signal waypoint reconciliation (cross-track + along-track + heading/track alignment + altitude consistency + cursor continuity), replacing the close-pass + closest-leg trio with a scored candidate-leg system. See `~/.claude/projects/-Users-gabriel-castro-repos-local-flight-follower/memory/project_v1_4_waypoint_rework.md`.
+- *Polish from v0.4.0 retro:* prevent airport tooltip overlap with the route line; restyle Fetch button (soft blue, full-width, inside Trip section).
+- *Architectural rework from v0.4.0 retro:* multi-signal waypoint reconciliation (cross-track + along-track + heading/track alignment + altitude consistency + cursor continuity), replacing the close-pass + closest-leg trio with a scored candidate-leg system. See `~/.claude/projects/-Users-gabriel-castro-repos-local-flight-follower/memory/project_v1_4_waypoint_rework.md`.
 
-### v1.5 — Multi-device / Responsive
+### v0.6.0 — Multi-device / Responsive
 
 - Mobile-friendly layout.
 - Alert center (replaces inline alerts).
 - LAN IP shown on startup banner / settings panel.
 - Header treatment for app-mode (kiosk / Electron-ready).
 
-### v1.6+ — Platform & data expansion
+### v0.7+ — Platform & data expansion
 
-- *From v1.1 backlog:* layers panel, unit switching, map style switcher, flight phase classifier, live METAR per airport, live position of other aircraft, FE-controlled replay module.
-- *From v1 roadmap:* flight logging, 3D / Cesium view, FBW A320 FMC reading, Electron packaging.
+- *From v0.2.0 backlog:* layers panel, unit switching, map style switcher, flight phase classifier, live METAR per airport, live position of other aircraft, FE-controlled replay module.
+- *From v0.1.0 roadmap:* flight logging, 3D / Cesium view, FBW A320 FMC reading, Electron packaging.
 - AUTO map mode (zoom by flight phase) — depends on the phase classifier above.
 - Airport elevation data for FlightPlanCard glyph.
 - Go-arounds / diverted flights handling — fixture-driven via NZQN→NZWN.
@@ -41,30 +41,30 @@ These are not "deferred" — they are scheduled. The structure below was set dur
 
 For traceability — these were on the backlog and have since shipped:
 
-- **v1.3.1** ✅ — post-real-flight retro patch. FlightPlanCard collapsed-route third-line clip (clamp moved onto an inner element so padding and clamping no longer share a border-box). Alternate Chip vertical alignment (TooltipTrigger gets `flex` so the chip aligns with `items-center`). Server-side: route-following `distanceToDestNm` and `eteToDestSec` (along-track remainder of current leg + sum of remaining leg distances); waypoint reconciliation switched to closest-leg projection (full-scan plan-load seed and per-tick windowed both); fixed the LFPG → LEPA "next jumps to destination at start" and "skips PG290 + PON to RBT mid-flight" bugs. New `plan.routeTotalDistanceNm` (haversine leg-sum) used as the progress denominator so the bar reads exactly 0% at the gate and 100% at the destination; `plan.totalDistanceNm` keeps the OFP value (Simbrief `air_distance`) for the FlightPlanCard "Distance" row. New `progress.tocAlongRouteNm` / `todAlongRouteNm` so TOC/TOD ticks and ETEs are also route-following. DX: `dev:replay` discovers a sibling `<recording>.ofp.json` and auto-loads it (env override `FF_PLAN_FIXTURE_PATH`); the in-app **Fetch** button reads from the same fixture in dev; `dev:record` writes a sibling OFP next to the recorded `.jsonl` so each session yields a paired fixture.
-- **v1.3** ✅ — flight progress release. Breadcrumb altitude gradient (variable-bucket sizing), plan-driven TOC/TOD markers and ETE countdowns, skip-waypoint arrows + along-track auto-resume on plan reload, origin → destination progress timeline, live ETA, alternate-on-map (blue, hover-only tooltip), FlightPlanCard glyph reveal-as-you-fly. Polish: FlightPlanCard collapse/wrap, map mode promotion (zoom-out of Overview, click-self no-op), true-vs-magnetic plane-icon rotation, magnetic TRK in PositionCard, indicated-altitude in MotionCard, light-mode tooltip, times-vocabulary alignment (block now `sched_block`). Spike outcome: NOT CLEAN — waypoint constraints not exposed cleanly in Simbrief; deferred to v1.4. See [`docs/notes/spike-waypoint-constraints.md`](./notes/spike-waypoint-constraints.md).
-- **v1.2** ✅ — component library + dark mode, DataPanel layout / grouping (Trip / Now / Reference), wind compass widget, default map tile style refinement, flight-plan card, multi-tier position precision.
+- **v0.4.1** ✅ — post-real-flight retro patch. FlightPlanCard collapsed-route third-line clip (clamp moved onto an inner element so padding and clamping no longer share a border-box). Alternate Chip vertical alignment (TooltipTrigger gets `flex` so the chip aligns with `items-center`). Server-side: route-following `distanceToDestNm` and `eteToDestSec` (along-track remainder of current leg + sum of remaining leg distances); waypoint reconciliation switched to closest-leg projection (full-scan plan-load seed and per-tick windowed both); fixed the LFPG → LEPA "next jumps to destination at start" and "skips PG290 + PON to RBT mid-flight" bugs. New `plan.routeTotalDistanceNm` (haversine leg-sum) used as the progress denominator so the bar reads exactly 0% at the gate and 100% at the destination; `plan.totalDistanceNm` keeps the OFP value (Simbrief `air_distance`) for the FlightPlanCard "Distance" row. New `progress.tocAlongRouteNm` / `todAlongRouteNm` so TOC/TOD ticks and ETEs are also route-following. DX: `dev:replay` discovers a sibling `<recording>.ofp.json` and auto-loads it (env override `FF_PLAN_FIXTURE_PATH`); the in-app **Fetch** button reads from the same fixture in dev; `dev:record` writes a sibling OFP next to the recorded `.jsonl` so each session yields a paired fixture.
+- **v0.4.0** ✅ — flight progress release. Breadcrumb altitude gradient (variable-bucket sizing), plan-driven TOC/TOD markers and ETE countdowns, skip-waypoint arrows + along-track auto-resume on plan reload, origin → destination progress timeline, live ETA, alternate-on-map (blue, hover-only tooltip), FlightPlanCard glyph reveal-as-you-fly. Polish: FlightPlanCard collapse/wrap, map mode promotion (zoom-out of Overview, click-self no-op), true-vs-magnetic plane-icon rotation, magnetic TRK in PositionCard, indicated-altitude in MotionCard, light-mode tooltip, times-vocabulary alignment (block now `sched_block`). Spike outcome: NOT CLEAN — waypoint constraints not exposed cleanly in Simbrief; deferred to v0.5.0. See [`docs/notes/spike-waypoint-constraints.md`](./notes/spike-waypoint-constraints.md).
+- **v0.3.0** ✅ — component library + dark mode, DataPanel layout / grouping (Trip / Now / Reference), wind compass widget, default map tile style refinement, flight-plan card, multi-tier position precision.
 
-## v1.1 brainstorming — context preserved
+## v0.2.0 brainstorming — context preserved
 
-These items originated in the v1.1 brainstorm. Current scheduling above; original context kept for traceability.
+These items originated in the v0.2.0 brainstorm. Current scheduling above; original context kept for traceability.
 
-### Deferred to a later v1.x (now scheduled in v1.6+)
+### Deferred to a later v0.x (now scheduled in v0.7+)
 
 - **Layers panel** — toggle path / waypoints / labels visibility on the map.
 - **Unit switching** — speed in km/h, altitude/distance in metres or kilometres, with toggle or auto-switch.
-- **Map style switcher** — full UI to swap tile providers at runtime (v1.2 only refines the default style; the switcher itself is parked).
+- **Map style switcher** — full UI to swap tile providers at runtime (v0.3.0 only refines the default style; the switcher itself is parked).
 - **Estimate flight phase** — TO / CLB / CRZ / DES / LAND classifier. Likely rule-based on altitude, vertical speed, on-ground, distance-to-airports.
 
-### Parked as v2 candidates (now v1.6+)
+### Parked as v2 candidates (now v0.7+)
 
 - **Live METAR per airport** — fetch and surface METAR for origin / destination / alternate.
 - **Live position of other aircraft** — would require an external feed (ADSB / FlightAware / OpenSky); MSFS does not expose multiplayer cleanly.
-- **Replay module (FE-controlled)** — turn the dev replay harness into a first-class user feature: load a recording in the browser, play / pause / scrub forwards and backwards, jump to a timestamp. Requires aggregator + breadcrumb reset on backward seek and a control surface (REST or WS commands) so the FE drives the replay. v1.1 only ships a simple forward-skip env var (`REPLAY_START_MS`) for dev ergonomics; the full module is a v1.6+ candidate.
+- **Replay module (FE-controlled)** — turn the dev replay harness into a first-class user feature: load a recording in the browser, play / pause / scrub forwards and backwards, jump to a timestamp. Requires aggregator + breadcrumb reset on backward seek and a control surface (REST or WS commands) so the FE drives the replay. v0.2.0 only ships a simple forward-skip env var (`REPLAY_START_MS`) for dev ergonomics; the full module is a v0.7+ candidate.
 
-## v1.2 polish — context preserved
+## v0.3.0 polish — context preserved
 
-Items that came up during the card-by-card iteration but were intentionally not pursued in v1.2. All scheduled in v1.4 above.
+Items that came up during the card-by-card iteration but were intentionally not pursued in v0.3.0. All scheduled in v0.5.0 above.
 
 ### Card-level data additions
 
@@ -74,7 +74,7 @@ Items that came up during the card-by-card iteration but were intentionally not 
 
 ### Clock card
 
-- **Plan-driven TOC / TOD detection** — current logic uses VS-based estimation for TOC and the 3:1 rule for TOD. **Now in v1.3** (see scheduled section above).
+- **Plan-driven TOC / TOD detection** — current logic uses VS-based estimation for TOC and the 3:1 rule for TOD. **Now in v0.4.0** (see scheduled section above).
 - **Local time at origin / destination** — tz-from-coordinate lookup; useful on long-haul.
 - **Sunrise / sunset at destination** — easy follow-up to the existing `isDaylight` calc.
 

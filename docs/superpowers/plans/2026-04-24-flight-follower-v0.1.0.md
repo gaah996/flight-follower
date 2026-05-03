@@ -2757,7 +2757,7 @@ With both dev servers running, confirm panel shows live values that update every
 
 ```bash
 git add web/src
-git commit -m "feat(web): DataPanel with all v1 cards"
+git commit -m "feat(web): DataPanel with all v0.1.0 cards"
 ```
 
 ---

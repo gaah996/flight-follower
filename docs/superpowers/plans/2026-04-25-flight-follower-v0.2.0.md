@@ -1,14 +1,14 @@
-# Flight Follower v1.1 Implementation Plan
+# Flight Follower v0.2.0 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Land ten polish-and-bugfix items on top of shipped v1: kill the pre-spawn 0,0 line, fix the aircraft icon rotation, stabilize the position display, make recording reliable on Windows, persist map view mode within the same browser session, declutter waypoint labels, allow zoom in Follow, show airport names, surface three UTC times (sim now + scheduled dep/arr), and add a forward replay-skip env var for dev.
+**Goal:** Land ten polish-and-bugfix items on top of shipped v0.1.0: kill the pre-spawn 0,0 line, fix the aircraft icon rotation, stabilize the position display, make recording reliable on Windows, persist map view mode within the same browser session, declutter waypoint labels, allow zoom in Follow, show airport names, surface three UTC times (sim now + scheduled dep/arr), and add a forward replay-skip env var for dev.
 
 **Architecture:** Purely additive. No new modules, no new endpoints, no new WS message types. Server changes are in the aggregator (filter), simbridge variables (ZULU vars), simbrief parser (name + sched times), and the entrypoint (recording UX). Frontend changes are in seven existing files plus the `fmt.ts` helper. All new shared-type fields are optional, preserving backwards compatibility with existing recordings and OFPs.
 
 **Tech Stack:** TypeScript (strict, ESM), Vitest, Zustand 4 (persist + createJSONStorage middleware), node-simconnect, Leaflet/React-Leaflet, Zod.
 
-**Spec:** [`docs/superpowers/specs/2026-04-25-flight-follower-v1.1-design.md`](../specs/2026-04-25-flight-follower-v1.1-design.md)
+**Spec:** [`docs/superpowers/specs/2026-04-25-flight-follower-v0.2.0-design.md`](../specs/2026-04-25-flight-follower-v0.2.0-design.md)
 
 ---
 
@@ -966,7 +966,7 @@ export function AircraftMarker() {
 }
 ```
 
-The path is the standard Material "flight" silhouette pointing **up** (i.e. north at heading 0°), so we rotate by the raw magnetic heading without any 90° offset. `currentColor` keeps the fill themable for v1.2.
+The path is the standard Material "flight" silhouette pointing **up** (i.e. north at heading 0°), so we rotate by the raw magnetic heading without any 90° offset. `currentColor` keeps the fill themable for v0.3.0.
 
 - [ ] **Step 2: Web typecheck**
 
@@ -1336,7 +1336,7 @@ In one terminal: `npm run dev:replay -- scripts/fixtures/replay-eddb-circuit.jso
 In another: `npm --workspace web run dev`
 Open `http://localhost:5173`.
 
-Walk through every v1.1 behavior in one session:
+Walk through every v0.2.0 behavior in one session:
 1. **No 0,0 line** — on first paint there should be no orange polyline crossing from (0,0) to EDDB; the breadcrumb starts at the EDDB ramp.
 2. **Aircraft icon** — points along the breadcrumb's direction of travel.
 3. **Position card** — `52.36° N · 13.51° E`-style values that change slowly.

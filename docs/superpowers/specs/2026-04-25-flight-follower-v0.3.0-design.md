@@ -1,17 +1,17 @@
-# Flight Follower — v1.2 Design Spec
+# Flight Follower — v0.3.0 Design Spec
 
 - **Date:** 2026-04-25
 - **Status:** Approved, ready for implementation planning
-- **Scope:** v1.2 (visual foundation — component library, dark mode, layout, themed widgets)
+- **Scope:** v0.3.0 (visual foundation — component library, dark mode, layout, themed widgets)
 - **Predecessors:**
-  - [`2026-04-24-flight-follower-design.md`](./2026-04-24-flight-follower-design.md) — v1
-  - [`2026-04-25-flight-follower-v1.1-design.md`](./2026-04-25-flight-follower-v1.1-design.md) — v1.1
+  - [`2026-04-24-flight-follower-v0.1.0-design.md`](./2026-04-24-flight-follower-v0.1.0-design.md) — v0.1.0
+  - [`2026-04-25-flight-follower-v0.2.0-design.md`](./2026-04-25-flight-follower-v0.2.0-design.md) — v0.2.0
 
 ## 1. Overview
 
-v1.2 is the visual-foundation release: it adopts a component library and a theming system, restructures the data panel into semantic groups, and replaces a few of the plainer cards with richer widgets (wind compass, flight-info card). It does **not** change any server logic, telemetry shape, or routing math beyond a small extension of the Simbrief parser to surface four extra fields.
+v0.3.0 is the visual-foundation release: it adopts a component library and a theming system, restructures the data panel into semantic groups, and replaces a few of the plainer cards with richer widgets (wind compass, flight-info card). It does **not** change any server logic, telemetry shape, or routing math beyond a small extension of the Simbrief parser to surface four extra fields.
 
-The brief, set during brainstorming: a **modern/minimal dashboard** foundation (Linear/Vercel/Notion register), with selective **MFD-style accents** (monospace numerics, tighter visual rhythm) on the data-display elements where they earn their keep. v1.2 builds the foundation *and* commits to those accents per-card during implementation; if a particular MFD treatment ends up looking tacky, we ship that card in clean A-style instead. No runtime A/B toggle.
+The brief, set during brainstorming: a **modern/minimal dashboard** foundation (Linear/Vercel/Notion register), with selective **MFD-style accents** (monospace numerics, tighter visual rhythm) on the data-display elements where they earn their keep. v0.3.0 builds the foundation *and* commits to those accents per-card during implementation; if a particular MFD treatment ends up looking tacky, we ship that card in clean A-style instead. No runtime A/B toggle.
 
 The release is intentionally narrow on backend surface: Simbrief parser gains four optional fields, types extend, nothing else server-side moves. The frontend is where almost all the work lives.
 
@@ -29,9 +29,9 @@ The release is intentionally narrow on backend surface: Simbrief parser gains fo
 10. Refresh the existing map UI (ViewModeControl, AircraftMarker, Leaflet tooltips) to fit the new theme.
 11. Move the Settings dialog to HeroUI's `Modal`, framing the existing single setting as a "Simbrief" section so future settings groups can land cleanly.
 
-## 3. Non-goals (v1.2)
+## 3. Non-goals (v0.3.0)
 
-- No new server logic. The aggregator, route-math, transport, and recording subsystems stay exactly as v1.1 left them.
+- No new server logic. The aggregator, route-math, transport, and recording subsystems stay exactly as v0.2.0 left them.
 - No new server endpoints, no new WebSocket message types.
 - No runtime map style switcher (the theme-driven swap is automatic; a user-facing dropdown stays in the backlog).
 - No layers panel, no unit toggling, no flight phase classifier, no live ETA — those remain scheduled or backlogged.
@@ -157,14 +157,14 @@ type SectionProps = {
 ```
 
 - Header is a HeroUI `Button` (`variant="light"`) with the title and a chevron that rotates 90° when open.
-- Body shows/hides via conditional render (no animation in v1.2 — keeps the markup simple).
+- Body shows/hides via conditional render (no animation in v0.3.0 — keeps the markup simple).
 - Open/closed state stored at `useViewStore.sections[sectionKey]: boolean`. Defaults to all open. Persisted in `sessionStorage`.
 
 We do **not** use HeroUI's `Accordion` — its single-open semantics aren't what we want.
 
 ### 7.3 Why this layout, not B (instrument cluster)
 
-The user explicitly preferred A's structure with the option to upgrade individual cards to B-style if they look right. v1.2 ships A's structure; the per-card MFD treatment lives in the wind compass and the multi-tier position number for now. Other cards stay clean A-style; if a future visual iteration wants more MFD flavor, it's a card-level change, not a layout change.
+The user explicitly preferred A's structure with the option to upgrade individual cards to B-style if they look right. v0.3.0 ships A's structure; the per-card MFD treatment lives in the wind compass and the multi-tier position number for now. Other cards stay clean A-style; if a future visual iteration wants more MFD flavor, it's a card-level change, not a layout change.
 
 ## 8. Map tiles
 
@@ -275,7 +275,7 @@ Render fallback: `Import a plan to see flight info.` when `plan == null` (matche
 
 ### 11.2 Hover state
 
-No hover state on the card itself in v1.2 (the user explicitly said no hover for the card).
+No hover state on the card itself in v0.3.0 (the user explicitly said no hover for the card).
 
 ## 12. Aircraft marker hover
 
@@ -333,7 +333,7 @@ In `shared/types.ts`:
 
 ```ts
 export type FlightPlan = {
-  // …existing v1.1 fields…
+  // …existing v0.2.0 fields…
   flightNumber?: string;     // e.g. "BAW123"
   aircraftType?: string;     // e.g. "A320"
   cruiseAltitudeFt?: number; // 36000 (raw feet; FE formats as FL360)
@@ -418,12 +418,12 @@ Per project pattern: server gets unit tests, frontend is verified manually again
 | `<TileLayer key={url}>` re-creation on theme swap causes a visible flash | Low | Acceptable for a sub-second flash; most users will toggle theme rarely. If annoying in practice, swap to a CSS-filter-based approach later. |
 | Tailwind v4 + Vite plugin doesn't play nicely with our existing Vite config | Low | The plugin is officially supported by the Tailwind team and integrates cleanly. If we hit an issue, the worst-case is downgrading to Tailwind v3 setup (PostCSS) which is well-documented. |
 | Renaming `fmt.ts` → `fmt.tsx` breaks something subtle (HMR, type imports) | Low | Vite handles `.ts`/`.tsx` interchangeably for ESM; named imports stay valid. We update import statements where needed; TypeScript will catch any miss. |
-| Inline-style → Tailwind migration introduces visual regressions in cards we don't fully redesign | Medium | Touch only what's in the v1.2 scope; leave the rest alone. Manual visual verification on the replay fixture catches any obvious drift. |
+| Inline-style → Tailwind migration introduces visual regressions in cards we don't fully redesign | Medium | Touch only what's in the v0.3.0 scope; leave the rest alone. Manual visual verification on the replay fixture catches any obvious drift. |
 | Dark map tiles look unfamiliar at first; user expects more visible labels | Low | We're using the `_all` (labelled) variants; user has seen and approved the choice. If labels feel too sparse mid-implementation, swap is a one-line change. |
 
 ## 18. Backlog updates
 
-After v1.2 ships, mark the following as completed-from-backlog so the file stays accurate:
+After v0.3.0 ships, mark the following as completed-from-backlog so the file stays accurate:
 - Component library + dark mode
 - DataPanel layout / grouping
 - Wind compass widget
@@ -437,7 +437,7 @@ The map style switcher, layers panel, unit toggling, flight phase classifier, an
 
 Explicitly deferred:
 
-- Live ETA, breadcrumb altitude gradient, skip-waypoint, TOC/TOD markers, progress timeline — scheduled for v1.3.
+- Live ETA, breadcrumb altitude gradient, skip-waypoint, TOC/TOD markers, progress timeline — scheduled for v0.4.0.
 - Map-style runtime switcher, layers panel, unit switching, flight phase classifier — backlog.
 - METAR per airport, live other aircraft, FE-controlled replay module — v2 candidates, backlog.
 - Tabs in the Settings modal — premature for one settings group; revisit when ≥ 3 sections exist.

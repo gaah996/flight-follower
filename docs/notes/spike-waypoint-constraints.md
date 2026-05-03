@@ -2,11 +2,11 @@
 
 ## Question
 
-Does Simbrief's OFP expose hard waypoint constraints (e.g. `at-or-below 5000 ft`, `max IAS 230 kt`) cleanly per-fix in the navlog, so we could render them on map waypoint tooltips in v1.3?
+Does Simbrief's OFP expose hard waypoint constraints (e.g. `at-or-below 5000 ft`, `max IAS 230 kt`) cleanly per-fix in the navlog, so we could render them on map waypoint tooltips in v0.4.0?
 
 ## Result
 
-**NOT CLEAN — defer waypoint-constraint rendering to v1.4.**
+**NOT CLEAN — defer waypoint-constraint rendering to v0.5.0.**
 
 ## Evidence
 
@@ -31,13 +31,13 @@ No `alt_min`, `alt_max`, `altitude_constraint`, `speed_constraint`, `mach_max`, 
 
 ## Decision
 
-- Skip the constraint sub-steps in v1.3 Task 4 (Simbrief parser extension): no `alt_const` / `speed_const` schema fields, no constraint test cases, no `parseAltConstraint` / `parseSpeedConstraint` helpers.
-- Keep the optional `Waypoint.altConstraint` and `Waypoint.speedConstraint` fields on `shared/types.ts` as forward-compat: they cost nothing, and v1.4 may add them via a different source (e.g. an external nav-data service like Navigraph, or pulling from FBW's FMC).
-- Park "waypoint constraint tooltips on the map" in `docs/backlog.md` under v1.4.
+- Skip the constraint sub-steps in v0.4.0 Task 4 (Simbrief parser extension): no `alt_const` / `speed_const` schema fields, no constraint test cases, no `parseAltConstraint` / `parseSpeedConstraint` helpers.
+- Keep the optional `Waypoint.altConstraint` and `Waypoint.speedConstraint` fields on `shared/types.ts` as forward-compat: they cost nothing, and v0.5.0 may add them via a different source (e.g. an external nav-data service like Navigraph, or pulling from FBW's FMC).
+- Park "waypoint constraint tooltips on the map" in `docs/backlog.md` under v0.5.0.
 
 ## Side-finding: block-time field correction
 
-While inspecting the OFP, the `times` block surfaced a mismatch in the v1.3 spec's chosen field name for `plan.blockTimeSec`. The relevant scheduled / estimated time fields are:
+While inspecting the OFP, the `times` block surfaced a mismatch in the v0.4.0 spec's chosen field name for `plan.blockTimeSec`. The relevant scheduled / estimated time fields are:
 
 | Field | Seconds | Meaning |
 |---|---|---|
@@ -50,8 +50,8 @@ While inspecting the OFP, the `times` block surfaced a mismatch in the v1.3 spec
 | `est_block` | 5136 | OUT → IN estimated, with winds — 1h26m |
 | `est_time_enroute` | 3456 | OFF → ON estimated, with winds — 0h58m |
 
-The v1.3 plan originally said to extract `times.est_time_enroute`, but that's **flight time (OFF→ON)**, not block. The right field for "block time matching what Simbrief shows on the OFP" is **`est_block`** (estimated gate-to-gate), with `sched_block` as a sensible fallback when `est_block` is absent.
+The v0.4.0 plan originally said to extract `times.est_time_enroute`, but that's **flight time (OFF→ON)**, not block. The right field for "block time matching what Simbrief shows on the OFP" is **`est_block`** (estimated gate-to-gate), with `sched_block` as a sensible fallback when `est_block` is absent.
 
 This also explains the user's original "block doesn't match Simbrief" observation: the FlightPlanCard derivation `scheduledIn - scheduledOut` equals `sched_block` (95 min) but Simbrief's printed OFP typically shows `est_block` (86 min). Switching to `est_block` will close that gap.
 
-**Plan update:** Task 4 will extract `plan.blockTimeSec` from `times.est_block` (preferring it), falling back to `times.sched_block` if absent. The `times.est_time_enroute` / `sched_time_enroute` fields stay unused for v1.3 — they're flight time and would deserve a separate `flightTimeSec` field if we ever surface it.
+**Plan update:** Task 4 will extract `plan.blockTimeSec` from `times.est_block` (preferring it), falling back to `times.sched_block` if absent. The `times.est_time_enroute` / `sched_time_enroute` fields stay unused for v0.4.0 — they're flight time and would deserve a separate `flightTimeSec` field if we ever surface it.

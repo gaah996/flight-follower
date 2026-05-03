@@ -1,16 +1,16 @@
-# Flight Follower v1.3.1 Implementation Plan
+# Flight Follower v0.4.1 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship five surgical bug fixes from the v1.3 real-flight retro (LFPG → LEPA), plus one DX extension that closes the replay/record loop end-to-end.
+**Goal:** Ship five surgical bug fixes from the v0.4.0 real-flight retro (LFPG → LEPA), plus one DX extension that closes the replay/record loop end-to-end.
 
 **Architecture:** Two new pure server-side helpers (`routeRemainingNm`, `advancePassedIndexWindowed`); the aggregator is rewired to use them in `computeProgress`. The Simbrief client gains a file-loading sibling and returns the raw OFP alongside the parsed plan. The HTTP `/api/simbrief/fetch` handler becomes fixture-aware (read-from-disk in dev) and write-on-success (sibling-OFP capture during recording). FE changes are CSS-only — moving a clamp onto an inner element and tidying the alternate-chip row.
 
 **Tech Stack:** TypeScript, Node 20, Fastify, Vitest, React 19, Tailwind v4, HeroUI v3.
 
-**Branch:** `feat/v1.3.1-bugfix` (already created).
+**Branch:** `feat/v0.4.1-bugfix` (already created).
 
-**Spec:** [`docs/superpowers/specs/2026-05-02-flight-follower-v1.3.1-design.md`](../specs/2026-05-02-flight-follower-v1.3.1-design.md).
+**Spec:** [`docs/superpowers/specs/2026-05-02-flight-follower-v0.4.1-design.md`](../specs/2026-05-02-flight-follower-v0.4.1-design.md).
 
 ---
 
@@ -532,7 +532,7 @@ with:
   /**
    * Route-following distance to destination in nautical miles: along-track
    * remainder of the current leg + sum of remaining leg distances.
-   * Replaced great-circle semantics in v1.3.1.
+   * Replaced great-circle semantics in v0.4.1.
    */
   distanceToDestNm: number | null;
 ```
@@ -1228,7 +1228,7 @@ Start the dev server:
 npm run dev:replay -- scripts/fixtures/replay-eddb-lipz.jsonl
 ```
 
-(Use any fixture with an `alternate` field; `replay-eddb-lipz.jsonl` was added in v1.3 and includes an alternate.)
+(Use any fixture with an `alternate` field; `replay-eddb-lipz.jsonl` was added in v0.4.0 and includes an alternate.)
 
 Open `http://localhost:4444` (or the configured port). Inspect the FlightPlanCard header row containing the callsign and the alt-chip. Capture computed heights of `Card.Description`, the `<span className="inline-flex">` wrapper, and `<Chip>`. Identify whether the misalignment is from:
 
@@ -1308,16 +1308,16 @@ EOF
 
 - [ ] **Step 1: Update `docs/backlog.md`.**
 
-Find the `## Already shipped — folded into past versions` section. Append a `### v1.3.1` line just before the `### v1.2 ✅` line if present, or at the bottom of the v1.3 entry. Use:
+Find the `## Already shipped — folded into past versions` section. Append a `### v0.4.1` line just before the `### v0.3.0 ✅` line if present, or at the bottom of the v0.4.0 entry. Use:
 
 ```markdown
-- **v1.3.1** ✅ — post-real-flight retro patch. FlightPlanCard collapsed-route third-line clip, alternate-chip vertical alignment. Server-side: route-following `distanceToDestNm` (and consequently `eteToDestSec`), windowed waypoint reconciliation that fixes the LFPG → LEPA "next jumps to destination at start" bug. DX: `dev:replay` discovers a sibling Simbrief OFP and auto-loads it; in-app **Fetch** reads the same fixture; `dev:record` writes a sibling OFP next to the recorded `.jsonl` so each recording session produces a paired fixture.
+- **v0.4.1** ✅ — post-real-flight retro patch. FlightPlanCard collapsed-route third-line clip, alternate-chip vertical alignment. Server-side: route-following `distanceToDestNm` (and consequently `eteToDestSec`), windowed waypoint reconciliation that fixes the LFPG → LEPA "next jumps to destination at start" bug. DX: `dev:replay` discovers a sibling Simbrief OFP and auto-loads it; in-app **Fetch** reads the same fixture; `dev:record` writes a sibling OFP next to the recorded `.jsonl` so each recording session produces a paired fixture.
 ```
 
-In the v1.4 backlog block, append a "Polish from v1.3 retro" sub-bullet:
+In the v0.5.0 backlog block, append a "Polish from v0.4.0 retro" sub-bullet:
 
 ```markdown
-- *Polish from v1.3 retro:* prevent airport tooltip overlap with the route line; restyle Fetch button (soft blue, full-width, inside Trip section).
+- *Polish from v0.4.0 retro:* prevent airport tooltip overlap with the route line; restyle Fetch button (soft blue, full-width, inside Trip section).
 ```
 
 - [ ] **Step 2: Run the full test suite + typechecks + build.**
@@ -1382,10 +1382,10 @@ rm scripts/fixtures/replay-test.jsonl scripts/fixtures/replay-test.ofp.json
 ```bash
 git add scripts/fixtures/replay-lfpg-lepa.jsonl scripts/fixtures/replay-lfpg-lepa.ofp.json docs/backlog.md
 git commit -m "$(cat <<'EOF'
-chore: v1.3.1 — fixture pair + backlog ship line
+chore: v0.4.1 — fixture pair + backlog ship line
 
 Commits the LFPG → LEPA recording and its paired Simbrief OFP fixture
-used to verify v1.3.1, and marks v1.3.1 as shipped in docs/backlog.md.
+used to verify v0.4.1, and marks v0.4.1 as shipped in docs/backlog.md.
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 EOF
@@ -1397,13 +1397,13 @@ EOF
 - [ ] **Step 6: Open a PR for the branch and tag the merge as `v0.4.1`.**
 
 ```bash
-git push -u origin feat/v1.3.1-bugfix
-gh pr create --title "v1.3.1 — post-real-flight retro patch" --body "$(cat <<'EOF'
+git push -u origin feat/v0.4.1-bugfix
+gh pr create --title "v0.4.1 — post-real-flight retro patch" --body "$(cat <<'EOF'
 ## Summary
 - Five surgical fixes from the LFPG → LEPA real-flight retro: third-line collapse clip, route-following progress (distance/ETE), windowed waypoint reconciliation (fixes the "next jumps to LEPA at start" bug), alternate-chip alignment.
 - DX: `dev:replay` auto-loads a sibling Simbrief OFP; in-app Fetch reads the same fixture; `dev:record` writes a sibling OFP for paired captures.
 
-Spec: `docs/superpowers/specs/2026-05-02-flight-follower-v1.3.1-design.md`.
+Spec: `docs/superpowers/specs/2026-05-02-flight-follower-v0.4.1-design.md`.
 
 ## Test plan
 - [x] `npm test` green

@@ -1,26 +1,26 @@
-# Flight Follower — v1.3.1 Design Spec
+# Flight Follower — v0.4.1 Design Spec
 
 - **Date:** 2026-05-02
 - **Status:** Approved, ready for implementation planning
-- **Scope:** v1.3.1 / `v0.4.1` — post-real-flight retro patch on top of v1.3
+- **Scope:** v0.4.1 / `v0.4.1` — post-real-flight retro patch on top of v0.4.0
 - **Predecessors:**
-  - [`2026-04-24-flight-follower-design.md`](./2026-04-24-flight-follower-design.md) — v1
-  - [`2026-04-25-flight-follower-v1.1-design.md`](./2026-04-25-flight-follower-v1.1-design.md) — v1.1
-  - [`2026-04-25-flight-follower-v1.2-design.md`](./2026-04-25-flight-follower-v1.2-design.md) — v1.2
-  - [`2026-05-01-flight-follower-v1.3-design.md`](./2026-05-01-flight-follower-v1.3-design.md) — v1.3
+  - [`2026-04-24-flight-follower-v0.1.0-design.md`](./2026-04-24-flight-follower-v0.1.0-design.md) — v0.1.0
+  - [`2026-04-25-flight-follower-v0.2.0-design.md`](./2026-04-25-flight-follower-v0.2.0-design.md) — v0.2.0
+  - [`2026-04-25-flight-follower-v0.3.0-design.md`](./2026-04-25-flight-follower-v0.3.0-design.md) — v0.3.0
+  - [`2026-05-01-flight-follower-v0.4.0-design.md`](./2026-05-01-flight-follower-v0.4.0-design.md) — v0.4.0
 
 ## 1. Overview
 
-v1.3 shipped on 2026-05-02 (tag `v0.4.0`). The first real-flight test (LFPG → LEPA, A320, FBW) surfaced four small but visible bugs and one developer-experience gap. v1.3.1 is a focused patch addressing those five items, plus one DX improvement to make future real-flight retros easier without consuming a Simbrief OFP slot.
+v0.4.0 shipped on 2026-05-02 (tag `v0.4.0`). The first real-flight test (LFPG → LEPA, A320, FBW) surfaced four small but visible bugs and one developer-experience gap. v0.4.1 is a focused patch addressing those five items, plus one DX improvement to make future real-flight retros easier without consuming a Simbrief OFP slot.
 
 The release is intentionally surgical:
 
 - No new user-facing features beyond the bug fixes.
 - No new WebSocket message types, no new REST endpoints (one existing endpoint becomes fixture-aware in dev).
 - One new pure server-side helper module; one new aggregator method signature change; small additions to existing files.
-- v1.4's previously-scoped "Personalization & per-user config" surface is preserved untouched and remains the next minor.
+- v0.5.0's previously-scoped "Personalization & per-user config" surface is preserved untouched and remains the next minor.
 
-Two items from the retro are deferred to v1.4 by user agreement: the airport tooltip overlap with the route, and the Fetch button restyle (soft blue, full-width, inside trip section). They are out of scope here; see § 11.
+Two items from the retro are deferred to v0.5.0 by user agreement: the airport tooltip overlap with the route, and the Fetch button restyle (soft blue, full-width, inside trip section). They are out of scope here; see § 11.
 
 ## 2. Goals
 
@@ -30,12 +30,12 @@ Two items from the retro are deferred to v1.4 by user agreement: the airport too
 4. Eliminate the LFPG → LEPA "waypoint immediately at destination on first tick" bug by narrowing per-tick reconciliation to legs near the current expected leg.
 5. Tidy the Alternate Chip's vertical alignment in the FlightPlanCard header so it sits flush with the callsign description.
 
-## 3. Non-goals (v1.3.1)
+## 3. Non-goals (v0.4.1)
 
-- **No new features.** No personalization, no card config persistence, no theme-by-day-night, no airline branding, no track-vs-heading toggle. v1.4 territory.
+- **No new features.** No personalization, no card config persistence, no theme-by-day-night, no airline branding, no track-vs-heading toggle. v0.5.0 territory.
 - **No airport tooltip overlap fix.** Deferred to a later release per user.
 - **No Fetch button restyle** (soft blue, full-width, inside trip section). Deferred to a later release per user. The button's *behavior* changes in dev (item 2 above) but its *appearance and placement* are unchanged.
-- **No SimVar-driven next-waypoint reading.** MSFS exposes `GPS_WP_NEXT_ID` / `GPS_WP_NEXT_LAT` / `GPS_WP_NEXT_LON` / `GPS_FLIGHT_PLAN_WP_INDEX`, and FBW A320 normally pushes its FPLN to the underlying GPS, so this is a viable parallel data source — but it's fragile across aircraft and across users who type routes only into the MCDU. Architectural-risk too high for a patch release; revisit in v1.4 as a parallel cross-check, not a source of truth.
+- **No SimVar-driven next-waypoint reading.** MSFS exposes `GPS_WP_NEXT_ID` / `GPS_WP_NEXT_LAT` / `GPS_WP_NEXT_LON` / `GPS_FLIGHT_PLAN_WP_INDEX`, and FBW A320 normally pushes its FPLN to the underlying GPS, so this is a viable parallel data source — but it's fragile across aircraft and across users who type routes only into the MCDU. Architectural-risk too high for a patch release; revisit in v0.5.0 as a parallel cross-check, not a source of truth.
 - **No protocol changes.** No new WS message types, no new REST endpoints. `/api/simbrief/fetch` is extended in-place.
 - **No backwards-compatibility shims.** Single-user lockstep deploy. The semantic shift on `distanceToDestNm` (great-circle → route-following) is documented in `shared/types.ts` JSDoc; no parallel field is kept.
 
@@ -72,7 +72,7 @@ The harness passes the resolved fixture path to `start()` via a new `simbriefFix
 - When `simbriefFixturePath` is set, the handler reads the file from disk, parses via `parseSimbriefOfp`, calls `aggregator.setPlan(plan)`, and returns the parsed `FlightPlan`. Same response shape as the prod path. Errors return the same `{ error, message }` envelope as the Simbrief-network path with new `code` values: `FIXTURE_NOT_FOUND` (file does not exist), `FIXTURE_BAD_JSON` (`JSON.parse` threw), `FIXTURE_BAD_OFP` (parser threw — wraps the Zod issue list).
 - When `simbriefFixturePath` is unset, behavior is identical to today (call `fetchLatestOfp(userId)`).
 
-**Why this matters for v1.3.1 specifically.** Item 4.4 (windowed reconciliation) is best verified by clicking **Fetch** mid-flight to force a `setPlan` from the aircraft's current (mid-flight) position. The fixture path makes that one-click in dev.
+**Why this matters for v0.4.1 specifically.** Item 4.4 (windowed reconciliation) is best verified by clicking **Fetch** mid-flight to force a `setPlan` from the aircraft's current (mid-flight) position. The fixture path makes that one-click in dev.
 
 **Format.** Raw Simbrief OFP JSON (the same shape `xml.fetcher.php?json=1` returns). Reuses `parseSimbriefOfp` as the single source of truth — bug-for-bug parity with the prod fetch path.
 
@@ -149,7 +149,7 @@ Edge cases:
 
 `computeProgress` in `state/aggregator.ts` calls `routeRemainingNm(t.position, plan, this.passedIndex)` and assigns the result to `distanceToDestNm`. The existing line that computes `haversineNm(t.position, plan.destination)` is removed.
 
-**Two distance fields on `FlightPlan`.** The Simbrief OFP exposes `general.air_distance` (and `route_distance` as fallback), which includes wind/route adjustments and runs a few percent higher than the geometric haversine sum of the navlog waypoints. Using the OFP value as the denominator alongside the new leg-following `distanceToDestNm` produces a non-zero progress percentage at the origin (~3.5% on the LFPG → LEPA fixture). The user wants the FlightPlanCard "Distance" row to stay true to the pilot's source of truth (the OFP), so v1.3.1 carries **both** values:
+**Two distance fields on `FlightPlan`.** The Simbrief OFP exposes `general.air_distance` (and `route_distance` as fallback), which includes wind/route adjustments and runs a few percent higher than the geometric haversine sum of the navlog waypoints. Using the OFP value as the denominator alongside the new leg-following `distanceToDestNm` produces a non-zero progress percentage at the origin (~3.5% on the LFPG → LEPA fixture). The user wants the FlightPlanCard "Distance" row to stay true to the pilot's source of truth (the OFP), so v0.4.1 carries **both** values:
 
 - `plan.totalDistanceNm` (existing) — Simbrief's `air_distance` with `route_distance` fallback. Displayed in FlightPlanCard's "Distance" row. May be `undefined` if the OFP omits both.
 - `plan.routeTotalDistanceNm` (new) — haversine sum of legs `[origin, ...waypoints, destination]`. Used as the denominator for progress percentages in `ProgressBar` and the FlightPlanCard glyph reveal. Always defined for plans parsed by `parseSimbriefOfp`.
@@ -241,7 +241,7 @@ this.passedIndex = Math.max(this.passedIndex, closePassIdx, windowedIdx);
 
 **Symptom.** In `FlightPlanCard.tsx`, the Alternate Chip in the header row sits visually slightly off from the callsign description on the same flex line.
 
-**Approach.** Loosely scoped audit-and-fix — same shape as v1.3 § 5.8 (light-mode tooltip opacity). The likely culprit is the `<span className="inline-flex">` wrapper around the Tooltip trigger introducing a different intrinsic height than `Card.Description`'s text line-height, while `items-center` on the row tries to center two boxes whose intrinsic heights differ.
+**Approach.** Loosely scoped audit-and-fix — same shape as v0.4.0 § 5.8 (light-mode tooltip opacity). The likely culprit is the `<span className="inline-flex">` wrapper around the Tooltip trigger introducing a different intrinsic height than `Card.Description`'s text line-height, while `items-center` on the row tries to center two boxes whose intrinsic heights differ.
 
 Investigation during implementation:
 1. Inspect computed heights of `Card.Description` vs the chip wrapper in DevTools.
@@ -332,28 +332,28 @@ Per project pattern: server gets unit tests, frontend is verified manually again
 | Route-following `distanceToDestNm` produces a confusing value when `passedIndex` is briefly out-of-sync with reality during a wide-of-leg recovery | Low | Along-track is clamped to `[0, legNm]` per leg. Result remains continuous and monotonic-ish through normal flight. |
 | Fixture-aware `/api/simbrief/fetch` accidentally activates in production due to env-var leakage | Low | The path is only set by the replay harness, which explicitly resolves and threads it. The CLI launcher (`server/src/index.ts` invokedDirectly branch) does not read any new env var. |
 | `simbriefFixturePath` errors (file missing, bad JSON) confuse the user | Low | Three explicit error codes (`FIXTURE_NOT_FOUND`, `FIXTURE_BAD_JSON`, `FIXTURE_BAD_OFP`) returned via the same envelope as Simbrief network errors; FE error toast already handles the envelope. |
-| Alternate Chip alignment fix turns out to require a HeroUI v3 component prop that doesn't exist | Low | Fall back to a fixed-height row container (`h-5` / `h-6`) with `items-center`; verified in the existing v1.3 dark/light theme. |
+| Alternate Chip alignment fix turns out to require a HeroUI v3 component prop that doesn't exist | Low | Fall back to a fixed-height row container (`h-5` / `h-6`) with `items-center`; verified in the existing v0.4.0 dark/light theme. |
 | The committed sibling OFP file `replay-lfpg-lepa.ofp.json` contains personal Simbrief identifiers (account hash etc.) | Low–Medium | Inspect the OFP at commit time; redact obvious user-id fields if present. The flight itself is a fictional sim flight, so route content is fine to commit. |
 | Sibling-OFP write during recording fails silently and the user only notices on replay | Low | `console.warn` on write failure; fetch response still returns the parsed plan so the in-flight UX is unaffected. Manual verification (§ 7) checks the file exists post-recording. |
-| `distanceToDestNm` semantics change surprises future v1.4 work that assumed great-circle | Low | JSDoc updated; v1.3.1 is shipped lockstep; v1.4 brainstorm picks up the new semantics directly. |
+| `distanceToDestNm` semantics change surprises future v0.5.0 work that assumed great-circle | Low | JSDoc updated; v0.4.1 is shipped lockstep; v0.5.0 brainstorm picks up the new semantics directly. |
 
 ## 9. Branch & release
 
-- New branch off current `main`: `feat/v1.3.1-bugfix`.
+- New branch off current `main`: `feat/v0.4.1-bugfix`.
 - Single PR; merge to `main` once tests + manual verification pass.
 - Tag `v0.4.1` on the merge commit.
-- Update `docs/backlog.md` `## Already shipped` section to add a v1.3.1 line listing the five fixes.
+- Update `docs/backlog.md` `## Already shipped` section to add a v0.4.1 line listing the five fixes.
 
 ## 10. Out of scope — deferred per user
 
 - **Airport tooltip overlap with route.** The "maybe" item from the retro: when the alternate marker hover-tooltip appears over a route line, the tooltip overlaps the route. Visual-only.
-- **Fetch button restyle:** soft blue, full-width, inside the Trip section. The button's *behavior* changes in dev (§ 4.2.2), but its *appearance and placement* are unchanged in v1.3.1.
+- **Fetch button restyle:** soft blue, full-width, inside the Trip section. The button's *behavior* changes in dev (§ 4.2.2), but its *appearance and placement* are unchanged in v0.4.1.
 
-Both are candidates for v1.4 (or wherever they fit alongside that release's personalization scope).
+Both are candidates for v0.5.0 (or wherever they fit alongside that release's personalization scope).
 
 ## 11. Backlog updates
 
-After v1.3.1 ships:
+After v0.4.1 ships:
 
-- Append a `### v1.3.1` line under `## Already shipped — folded into past versions` in `docs/backlog.md` with the five fixes plus the dev-mock-plan DX feature.
-- The two deferred items (airport tooltip overlap, Fetch button restyle) join the v1.4 backlog under a "Polish from v1.3 retro" sub-bullet.
+- Append a `### v0.4.1` line under `## Already shipped — folded into past versions` in `docs/backlog.md` with the five fixes plus the dev-mock-plan DX feature.
+- The two deferred items (airport tooltip overlap, Fetch button restyle) join the v0.5.0 backlog under a "Polish from v0.4.0 retro" sub-bullet.

@@ -1,4 +1,4 @@
-# Flight Follower v1.2 Implementation Plan
+# Flight Follower v0.3.0 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** Tailwind CSS v4 (CSS-first config via `@tailwindcss/vite`), HeroUI (`@heroui/react`, `@heroui/theme`), `framer-motion`. Existing: TypeScript (strict, ESM), React 18, Zustand 4 with `persist` middleware, Leaflet/React-Leaflet, Vitest, Zod.
 
-**Spec:** [`docs/superpowers/specs/2026-04-25-flight-follower-v1.2-design.md`](../specs/2026-04-25-flight-follower-v1.2-design.md)
+**Spec:** [`docs/superpowers/specs/2026-04-25-flight-follower-v0.3.0-design.md`](../specs/2026-04-25-flight-follower-v0.3.0-design.md)
 
 ---
 
@@ -521,7 +521,7 @@ Replace the existing `<head>` block. Final shape:
     <script>
       // FOUC prevention: read theme from localStorage and set the dark class
       // on <html> before any styles render. Safe to fail-silent — defaults to
-      // dark per the v1.2 spec.
+      // dark per the v0.3.0 spec.
       try {
         var raw = localStorage.getItem('ff:theme');
         var theme = raw ? JSON.parse(raw).state.theme : 'dark';
@@ -884,7 +884,7 @@ export function FlightInfoCard() {
 }
 ```
 
-This is a TEMPORARY stub. Task 17 replaces it with the real implementation. The stub's purpose is just to let the rest of v1.2 land in committable order.
+This is a TEMPORARY stub. Task 17 replaces it with the real implementation. The stub's purpose is just to let the rest of v0.3.0 land in committable order.
 
 - [ ] **Step 4: Web typecheck — now clean**
 
@@ -1190,7 +1190,7 @@ Expected: no errors.
 
 - [ ] **Step 3: Manual verify**
 
-Replay running. Top-right of the map shows three connected buttons (overview / follow / manual). Active mode is solid blue, others flat. Click each to switch; behavior identical to v1.1. Theme toggle changes button colors appropriately.
+Replay running. Top-right of the map shows three connected buttons (overview / follow / manual). Active mode is solid blue, others flat. Click each to switch; behavior identical to v0.2.0. Theme toggle changes button colors appropriately.
 
 - [ ] **Step 4: Commit**
 
@@ -1716,7 +1716,7 @@ Expected: no errors.
 
 - [ ] **Step 3: Manual verify**
 
-Replay running. Click the gear icon: a HeroUI modal opens with a heading "Settings" and a "Simbrief" section underneath. Press Escape: closes. Click outside the modal: closes. With a valid pilot ID, click Fetch latest plan: triggers the fetch + overview refit (same as v1.1 behavior).
+Replay running. Click the gear icon: a HeroUI modal opens with a heading "Settings" and a "Simbrief" section underneath. Press Escape: closes. Click outside the modal: closes. With a valid pilot ID, click Fetch latest plan: triggers the fetch + overview refit (same as v0.2.0 behavior).
 
 - [ ] **Step 4: Commit**
 
@@ -1807,7 +1807,7 @@ git commit -m "style(web): apply theme tokens to shared Card/Row primitives"
 
 Find the existing "Stack" paragraph in `README.md`. Append a sentence to it:
 
-> v1.2 introduces Tailwind v4, HeroUI for theming and primitives, and a dark-by-default theme that toggles in the header.
+> v0.3.0 introduces Tailwind v4, HeroUI for theming and primitives, and a dark-by-default theme that toggles in the header.
 
 - [ ] **Step 2: Commit**
 
@@ -1823,7 +1823,7 @@ git commit -m "docs: note Tailwind v4 + HeroUI + dark-mode toggle in stack secti
 - [ ] **Step 1: Full server test suite**
 
 Run: `npm test`
-Expected: all tests pass (52 from v1.1 plus the seven new parser tests = 59 total).
+Expected: all tests pass (52 from v0.2.0 plus the seven new parser tests = 59 total).
 
 - [ ] **Step 2: Full typecheck**
 
