@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { FlightPlan } from '@ff/shared';
+import { haversineNm } from '../route-math/distance.js';
 
 const numFromStr = z.union([z.number(), z.string().transform((s) => Number(s))]);
 
@@ -64,8 +65,39 @@ export function parseSimbriefOfp(raw: unknown): FlightPlan {
       ? `${ofp.general.icao_airline}${ofp.general.flight_number}`
       : undefined;
 
-  const totalDistanceNm = ofp.general?.air_distance ?? ofp.general?.route_distance;
   const routeString = ofp.general?.route_navigraph ?? ofp.general?.route;
+
+  const waypoints = ofp.navlog.fix.map((f) => ({
+    ident: f.ident,
+    lat: f.pos_lat,
+    lon: f.pos_long,
+    plannedAltitude: f.altitude_feet,
+  }));
+
+  // Simbrief's printed total distance (air_distance preferred, with
+  // route_distance as fallback). May include wind/route adjustments that
+  // aren't visible in the geometric waypoint sum. Displayed in
+  // FlightPlanCard so the panel matches the OFP the pilot files.
+  const totalDistanceNm = ofp.general?.air_distance ?? ofp.general?.route_distance;
+
+  // Geometric haversine sum of legs [origin, ...waypoints, destination].
+  // Used as the denominator for progress percentages so progress reads
+  // exactly 0% at origin and 100% at destination, matching the
+  // route-following progress.distanceToDestNm numerator.
+  const points = [
+    { lat: ofp.origin.pos_lat, lon: ofp.origin.pos_long },
+    ...waypoints.map((w) => ({ lat: w.lat, lon: w.lon })),
+    { lat: ofp.destination.pos_lat, lon: ofp.destination.pos_long },
+  ];
+  let routeTotalDistanceNm = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    routeTotalDistanceNm += haversineNm(
+      points[i]!.lat,
+      points[i]!.lon,
+      points[i + 1]!.lat,
+      points[i + 1]!.lon,
+    );
+  }
 
   return {
     fetchedAt: Date.now(),
@@ -89,18 +121,14 @@ export function parseSimbriefOfp(raw: unknown): FlightPlan {
           name: ofp.alternate.name,
         }
       : undefined,
-    waypoints: ofp.navlog.fix.map((f) => ({
-      ident: f.ident,
-      lat: f.pos_lat,
-      lon: f.pos_long,
-      plannedAltitude: f.altitude_feet,
-    })),
+    waypoints,
     scheduledOut: schedOutSec != null ? schedOutSec * 1000 : undefined,
     scheduledIn: schedInSec != null ? schedInSec * 1000 : undefined,
     flightNumber,
     aircraftType: ofp.aircraft?.icao_code,
     cruiseAltitudeFt: ofp.general?.initial_altitude,
     totalDistanceNm,
+    routeTotalDistanceNm,
     routeString,
     blockTimeSec,
   };

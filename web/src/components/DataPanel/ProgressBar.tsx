@@ -79,7 +79,7 @@ function CruiseTick({ pct, label }: { pct: number; label: string }) {
 
 export function ProgressBar({ plan, progress }: Props) {
   const totalNm =
-    plan.totalDistanceNm ??
+    plan.routeTotalDistanceNm ??
     haversineNm(
       plan.origin.lat,
       plan.origin.lon,
@@ -94,36 +94,14 @@ export function ProgressBar({ plan, progress }: Props) {
       : Math.max(0, Math.min(1, 1 - progress.distanceToDestNm / totalNm));
 
   const tocPct =
-    progress.tocPosition == null
+    progress.tocAlongRouteNm == null
       ? null
-      : Math.max(
-          0,
-          Math.min(
-            1,
-            haversineNm(
-              plan.origin.lat,
-              plan.origin.lon,
-              progress.tocPosition.lat,
-              progress.tocPosition.lon
-            ) / totalNm
-          )
-        );
+      : Math.max(0, Math.min(1, progress.tocAlongRouteNm / totalNm));
 
   const todPct =
-    progress.todPosition == null
+    progress.todAlongRouteNm == null
       ? null
-      : Math.max(
-          0,
-          Math.min(
-            1,
-            haversineNm(
-              plan.origin.lat,
-              plan.origin.lon,
-              progress.todPosition.lat,
-              progress.todPosition.lon
-            ) / totalNm
-          )
-        );
+      : Math.max(0, Math.min(1, progress.todAlongRouteNm / totalNm));
 
   return (
     <div

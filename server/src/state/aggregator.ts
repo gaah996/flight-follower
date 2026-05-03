@@ -1,8 +1,8 @@
 import { EventEmitter } from 'node:events';
 import type { FlightPlan, FlightProgress, FlightState, RawTelemetry } from '@ff/shared';
-import { haversineNm } from '../route-math/distance.js';
-import { advancePassedIndex, alongTrackNm, distanceToWaypointNm, eteSeconds, findPassedIndex } from '../route-math/progress.js';
+import { advancePassedIndex, advancePassedIndexWindowed, distanceToWaypointNm, eteSeconds, findPassedIndex } from '../route-math/progress.js';
 import { findTOC, findTOD } from '../route-math/cruise-points.js';
+import { routeDistanceFromOriginNm, routeRemainingNm } from '../route-math/route-progress.js';
 
 const BREADCRUMB_INTERVAL_MS = 5000;
 const HEADING_DELTA_DEG = 2;
@@ -17,6 +17,8 @@ const EMPTY_PROGRESS: FlightProgress = {
   flightTimeSec: null,
   tocPosition: null,
   todPosition: null,
+  tocAlongRouteNm: null,
+  todAlongRouteNm: null,
   eteToTocSec: null,
   eteToTodSec: null,
 };
@@ -124,54 +126,85 @@ export class Aggregator extends EventEmitter {
     if (t == null) {
       // Surface TOC/TOD positions as soon as a plan loads, even before any
       // telemetry has arrived (lets the map markers render immediately).
+      const tocPosition = findTOC(plan.waypoints, plan.cruiseAltitudeFt);
+      const todPosition = findTOD(plan.waypoints, plan.cruiseAltitudeFt);
       return {
         ...EMPTY_PROGRESS,
         flightTimeSec,
-        tocPosition: findTOC(plan.waypoints, plan.cruiseAltitudeFt),
-        todPosition: findTOD(plan.waypoints, plan.cruiseAltitudeFt),
+        tocPosition,
+        todPosition,
+        tocAlongRouteNm:
+          tocPosition == null ? null : routeDistanceFromOriginNm(tocPosition, plan),
+        todAlongRouteNm:
+          todPosition == null ? null : routeDistanceFromOriginNm(todPosition, plan),
       };
     }
     // Two complementary advancement paths, both forward-only via Math.max:
     //  - advancePassedIndex (close-pass, 2 nm threshold) catches the precise
     //    moment of crossing waypoints when on-route.
-    //  - findPassedIndex (along-track projection) catches the off-track case
-    //    where the aircraft is wide of the waypoint by more than the threshold.
+    //  - advancePassedIndexWindowed (bounded along-track projection) catches
+    //    the off-track case where the aircraft is wide of the waypoint by
+    //    more than the threshold. The window restricts reconciliation to
+    //    legs near the current cursor — full-scan along-track misfires when
+    //    a far leg's bearing aligns with the aircraft's bearing from the
+    //    leg's start (LFPG → LEPA bug, v1.3.1).
     const closePassIdx = advancePassedIndex(
       t.position,
       plan.waypoints,
       this.passedIndex,
       WAYPOINT_PASS_THRESHOLD_NM,
     );
-    const projectedIdx = findPassedIndex(t.position, plan.waypoints);
-    this.passedIndex = Math.max(this.passedIndex, closePassIdx, projectedIdx);
+    const windowedIdx = advancePassedIndexWindowed(
+      t.position,
+      plan.waypoints,
+      this.passedIndex,
+    );
+    this.passedIndex = Math.max(this.passedIndex, closePassIdx, windowedIdx);
     const nextIdx = this.passedIndex + 1;
     const nextWp = plan.waypoints[nextIdx] ?? null;
     const distNext = nextWp ? distanceToWaypointNm(t.position, nextWp) : null;
-    const distDest = haversineNm(t.position.lat, t.position.lon, plan.destination.lat, plan.destination.lon);
+    const distDest = routeRemainingNm(t.position, plan, this.passedIndex);
     const gs = t.speed.ground;
 
     const tocPosition = findTOC(plan.waypoints, plan.cruiseAltitudeFt);
     const todPosition = findTOD(plan.waypoints, plan.cruiseAltitudeFt);
-    const distToToc =
-      tocPosition == null
-        ? null
-        : haversineNm(t.position.lat, t.position.lon, tocPosition.lat, tocPosition.lon);
-    const distToTod =
-      todPosition == null
-        ? null
-        : haversineNm(t.position.lat, t.position.lon, todPosition.lat, todPosition.lon);
+    const tocAlongRouteNm =
+      tocPosition == null ? null : routeDistanceFromOriginNm(tocPosition, plan);
+    const todAlongRouteNm =
+      todPosition == null ? null : routeDistanceFromOriginNm(todPosition, plan);
 
-    // Detect "past TOC/TOD" via along-track on the origin → destination axis.
-    // Once past, suppress the ETE so the Clock card hops to the next phase
-    // (TOC → TOD → null → fall-back). Marker positions stay non-null per
-    // spec § 4.2 ("markers stay visible for the entire flight").
-    const aircraftAlong = alongTrackNm(t.position, plan.origin, plan.destination);
-    const tocAlong =
-      tocPosition == null ? null : alongTrackNm(tocPosition, plan.origin, plan.destination);
-    const todAlong =
-      todPosition == null ? null : alongTrackNm(todPosition, plan.origin, plan.destination);
-    const isPastToc = tocAlong != null && aircraftAlong >= tocAlong;
-    const isPastTod = todAlong != null && aircraftAlong >= todAlong;
+    // Aircraft's cumulative route-from-origin distance: total route minus
+    // route-following remaining. Used both for past-TOC/TOD detection and
+    // as the numerator denominator pair for route-following ETEs. Falls
+    // back to the destination's cumulative-from-origin (which is the
+    // leg-sum of the full route) when plan.routeTotalDistanceNm isn't set
+    // — keeps test fixtures and any non-Simbrief plan source working.
+    const routeTotal =
+      plan.routeTotalDistanceNm ??
+      routeDistanceFromOriginNm(
+        { lat: plan.destination.lat, lon: plan.destination.lon },
+        plan,
+      );
+    const aircraftRouteFromOriginNm =
+      routeTotal != null ? Math.max(0, routeTotal - distDest) : null;
+
+    const isPastToc =
+      tocAlongRouteNm != null &&
+      aircraftRouteFromOriginNm != null &&
+      aircraftRouteFromOriginNm >= tocAlongRouteNm;
+    const isPastTod =
+      todAlongRouteNm != null &&
+      aircraftRouteFromOriginNm != null &&
+      aircraftRouteFromOriginNm >= todAlongRouteNm;
+
+    const remainingToTocNm =
+      tocAlongRouteNm != null && aircraftRouteFromOriginNm != null
+        ? Math.max(0, tocAlongRouteNm - aircraftRouteFromOriginNm)
+        : null;
+    const remainingToTodNm =
+      todAlongRouteNm != null && aircraftRouteFromOriginNm != null
+        ? Math.max(0, todAlongRouteNm - aircraftRouteFromOriginNm)
+        : null;
 
     return {
       nextWaypoint: nextWp,
@@ -182,8 +215,10 @@ export class Aggregator extends EventEmitter {
       flightTimeSec,
       tocPosition,
       todPosition,
-      eteToTocSec: isPastToc || distToToc == null ? null : eteSeconds(distToToc, gs),
-      eteToTodSec: isPastTod || distToTod == null ? null : eteSeconds(distToTod, gs),
+      tocAlongRouteNm,
+      todAlongRouteNm,
+      eteToTocSec: isPastToc || remainingToTocNm == null ? null : eteSeconds(remainingToTocNm, gs),
+      eteToTodSec: isPastTod || remainingToTodNm == null ? null : eteSeconds(remainingToTodNm, gs),
     };
   }
 

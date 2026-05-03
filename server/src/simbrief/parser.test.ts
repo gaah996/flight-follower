@@ -89,6 +89,13 @@ describe('parseSimbriefOfp', () => {
     expect(plan.totalDistanceNm).toBe(1085);
   });
 
+  it('computes routeTotalDistanceNm as the haversine sum of legs origin → waypoints → destination', () => {
+    const plan = parseSimbriefOfp(fixture);
+    // EGLL → MID → TOC → OKRIX → TOD → BAN → LEMD ≈ 674 nm.
+    expect(plan.routeTotalDistanceNm).toBeGreaterThan(670);
+    expect(plan.routeTotalDistanceNm).toBeLessThan(680);
+  });
+
   it('extracts route string, preferring route_navigraph when present', () => {
     const plan = parseSimbriefOfp(fixture);
     expect(plan.routeString).toBe('EGLL DCT MID UN160 OKRIX UM601 BAN LEMD');
@@ -115,6 +122,9 @@ describe('parseSimbriefOfp', () => {
     expect(plan.cruiseAltitudeFt).toBeUndefined();
     expect(plan.totalDistanceNm).toBeUndefined();
     expect(plan.routeString).toBeUndefined();
+    // routeTotalDistanceNm is computed from origin/waypoints/destination,
+    // so it's always defined regardless of the general block.
+    expect(plan.routeTotalDistanceNm).toBeGreaterThan(0);
   });
 
   it('omits flightNumber when only one of icao_airline / flight_number is present', () => {

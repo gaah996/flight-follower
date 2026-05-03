@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { eteSeconds, distanceToWaypointNm, advancePassedIndex, findPassedIndex, alongTrackNm } from './progress.js';
+import type { Waypoint } from '@ff/shared';
+import { eteSeconds, distanceToWaypointNm, advancePassedIndex, findPassedIndex, alongTrackNm, advancePassedIndexWindowed } from './progress.js';
 
 const wpts = [
   { ident: 'A', lat: 0, lon: 0 },
@@ -102,5 +103,98 @@ describe('findPassedIndex', () => {
 
   it('returns -1 for a single waypoint', () => {
     expect(findPassedIndex({ lat: 0, lon: 0 }, [wpts[0]!])).toBe(-1);
+  });
+
+  it('regression: at the route start, picks the first SID-shape leg even when later legs are within reach', () => {
+    // Simulates the LFPG → LEPA failure mode: real navlog has multiple
+    // SID-and-early-enroute legs within 200 nm of the origin. With a
+    // pure reach-gate-in-loop, several of those legs could each misfire
+    // (bearing alignment) and the cumulative max jumps the cursor.
+    // Closest-leg projects only onto the most relevant leg.
+    const sidShape: Waypoint[] = [
+      // Mimics a SID departing south, then a doubling-back leg within
+      // 200 nm of origin (49°N, 0°E) that previously misfired.
+      { ident: 'W0', lat: 48, lon: 0 }, // 60 nm south of origin
+      { ident: 'W1', lat: 47, lon: 0 }, // 120 nm south
+      { ident: 'W2', lat: 46, lon: 0 }, // 180 nm south
+      { ident: 'W3', lat: 47, lon: 0 }, // doubles back north 1° (180 nm from origin)
+      { ident: 'W4', lat: 45, lon: 0 }, // 240 nm south (reach-gated by closest-leg's bestDist)
+    ];
+    expect(findPassedIndex({ lat: 49, lon: 0 }, sidShape)).toBe(-1);
+  });
+});
+
+describe('advancePassedIndexWindowed', () => {
+  // Reuses `wpts` declared at the top of this file (A,B,C at lon 0,1,2).
+
+  it('does not advance from -1 when aircraft is far north of all waypoints', () => {
+    // Window at passedIndex=-1 covers leg [0,1] only. Aircraft at lat 5 lon 0
+    // is far north; bearing from A to pos differs from A→B (east), so
+    // along-track is small or negative. No advance.
+    expect(advancePassedIndexWindowed({ lat: 5, lon: 0 }, wpts, -1)).toBe(-1);
+  });
+
+  it('advances to 0 when aircraft is past A on leg [A,B]', () => {
+    // Aircraft 0.6° east of A: along-track on [A,B] ~36 nm out of ~60 nm.
+    expect(advancePassedIndexWindowed({ lat: 0, lon: 0.6 }, wpts, -1)).toBe(0);
+  });
+
+  it('advances to 1 when along-track on [A,B] exceeds legNm', () => {
+    expect(advancePassedIndexWindowed({ lat: 0, lon: 1.05 }, wpts, -1)).toBe(1);
+  });
+
+  it('advances to 2 when on leg [B,C] past C', () => {
+    expect(advancePassedIndexWindowed({ lat: 0, lon: 2.05 }, wpts, 1)).toBe(2);
+  });
+
+  it('forward-only: never returns less than currentPassedIndex', () => {
+    expect(advancePassedIndexWindowed({ lat: -5, lon: 0 }, wpts, 1)).toBe(1);
+  });
+
+  it('returns currentPassedIndex unchanged when waypoints has fewer than 2 elements', () => {
+    expect(advancePassedIndexWindowed({ lat: 0, lon: 0 }, [], -1)).toBe(-1);
+    expect(advancePassedIndexWindowed({ lat: 0, lon: 0 }, [wpts[0]!], -1)).toBe(-1);
+  });
+
+  it('regression: does not consider out-of-window legs at the route start (LFPG-shape)', () => {
+    // Synthetic doubling-back route: leg [3,4] (C → D) points NORTH (43°N
+    // → 44°N). Aircraft at origin (49°N) lies on the bearing-extension of
+    // C → D. Full-scan findPassedIndex returns >= 3 for this position;
+    // windowed at passedIndex=-1 must return -1 because legs [3,4] and
+    // beyond are outside the window [0,1] when N=5 waypoints.
+    const lfpgShape = [
+      { ident: 'A', lat: 47, lon: 0 },
+      { ident: 'B', lat: 45, lon: 0 },
+      { ident: 'C', lat: 43, lon: 0 },
+      { ident: 'D', lat: 44, lon: 0 }, // doubles back north 1°
+      { ident: 'E', lat: 40, lon: 0 },
+    ];
+    expect(advancePassedIndexWindowed({ lat: 49, lon: 0 }, lfpgShape, -1)).toBe(-1);
+    // Anchor: with reach-gating (v1.3.1), findPassedIndex also returns -1
+    // for this geometry — only the first leg is within 200 nm of the
+    // origin, and its bearing misaligns. Both the windowed per-tick path
+    // and the full-scan plan-load path are now safe against the LFPG
+    // misfire shape.
+    expect(findPassedIndex({ lat: 49, lon: 0 }, lfpgShape)).toBe(-1);
+  });
+
+  it('regression: closest-leg projection avoids the doubling-back-in-window misfire', () => {
+    // Synthetic of the user-reported "PG270 → skipped PG290+PON → RBT"
+    // bug. Aircraft is between W0 (50°N) and W1 (48°N) on a southbound
+    // route, currentPassedIndex=0 (W0 already passed). Window covers
+    // legs [0..2] = [W0,W1], [W1,W2], [W2,W3]. The doubling-back leg
+    // [W2,W3] points north (45°N → 46°N), and its bearing from W2
+    // aligns with the bearing from W2 back to pos at lat 48.5°N.
+    // Old "project on all + Math.max" gave bestPassed = 3 (jumping to
+    // W4). Closest-leg picks only [W0,W1] (nearest endpoint at min 30 nm)
+    // and projects only there, returning passed = 0.
+    const wptsBack: Waypoint[] = [
+      { ident: 'W0', lat: 50, lon: 0 },
+      { ident: 'W1', lat: 48, lon: 0 },
+      { ident: 'W2', lat: 45, lon: 0 },
+      { ident: 'W3', lat: 46, lon: 0 }, // doubles back north 1°
+      { ident: 'W4', lat: 40, lon: 0 },
+    ];
+    expect(advancePassedIndexWindowed({ lat: 48.5, lon: 0 }, wptsBack, 0)).toBe(0);
   });
 });

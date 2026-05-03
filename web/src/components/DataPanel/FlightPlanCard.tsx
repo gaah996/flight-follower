@@ -152,8 +152,8 @@ export function FlightPlanCard() {
   const [expanded, setExpanded] = useState(false);
 
   const progressPct =
-    plan?.totalDistanceNm != null && distToDest != null
-      ? Math.max(0, Math.min(1, 1 - distToDest / plan.totalDistanceNm))
+    plan?.routeTotalDistanceNm != null && distToDest != null
+      ? Math.max(0, Math.min(1, 1 - distToDest / plan.routeTotalDistanceNm))
       : 0;
 
   if (!plan) {
@@ -197,15 +197,15 @@ export function FlightPlanCard() {
           <Card.Description>{callsign}</Card.Description>
           {plan.alternate && (
             <Tooltip>
-              <TooltipTrigger>
-                <span
-                  className="inline-flex"
+              <TooltipTrigger className="flex">
+                <Chip
+                  size="sm"
+                  variant="soft"
+                  color="default"
                   aria-label={`Alternate: ${plan.alternate.name ?? plan.alternate.icao}`}
                 >
-                  <Chip size="sm" variant="soft" color="default">
-                    <Chip.Label>alt {plan.alternate.icao}</Chip.Label>
-                  </Chip>
-                </span>
+                  <Chip.Label>alt {plan.alternate.icao}</Chip.Label>
+                </Chip>
               </TooltipTrigger>
               <TooltipContent>
                 {plan.alternate.name ?? `Alternate: ${plan.alternate.icao}`}
@@ -229,9 +229,7 @@ export function FlightPlanCard() {
             variant="secondary"
             onClick={() => setExpanded((v) => !v)}
             title={expanded ? 'Click to collapse' : 'Click to expand'}
-            className={`rounded-lg py-1 px-2 ml-[-8px] mr-[-8px] text-xs cursor-pointer ${
-              expanded ? '' : 'line-clamp-2 max-h-[2.5rem] overflow-hidden'
-            }`}
+            className="rounded-lg py-1 px-2 ml-[-8px] mr-[-8px] text-xs cursor-pointer"
             style={{
               fontFamily: 'ui-monospace, monospace',
               color: 'var(--ff-fg-muted)',
@@ -244,7 +242,7 @@ export function FlightPlanCard() {
               whiteSpace: 'normal',
             }}
           >
-            {plan.routeString}
+            <div className={expanded ? '' : 'line-clamp-2'}>{plan.routeString}</div>
           </Surface>
         </Card.Footer>
       )}

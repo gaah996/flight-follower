@@ -16,6 +16,8 @@ const emptyState: FlightState = {
     flightTimeSec: null,
     tocPosition: null,
     todPosition: null,
+    tocAlongRouteNm: null,
+    todAlongRouteNm: null,
     eteToTocSec: null,
     eteToTodSec: null,
   },

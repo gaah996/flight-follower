@@ -1,7 +1,8 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { RawTelemetry } from '@ff/shared';
+import { loadOfpFromFile, siblingOfpPath } from '../server/src/simbrief/client.js';
 import { start } from '../server/src/index.js';
 
 async function main() {
@@ -16,6 +17,10 @@ async function main() {
   const fixturePath = fixtureArg
     ? resolve(userCwd, fixtureArg)
     : join(here, 'fixtures', 'replay-eddb-circuit.jsonl');
+  // Sibling OFP discovery: env var > sibling by basename > none.
+  const envOfp = process.env.FF_PLAN_FIXTURE_PATH;
+  const candidate = envOfp ? resolve(userCwd, envOfp) : siblingOfpPath(fixturePath);
+  const planFixturePath = existsSync(candidate) ? candidate : null;
   const tickMs = Number(process.env.REPLAY_TICK_MS ?? 500);
   const startMs = Number(process.env.REPLAY_START_MS ?? 0);
 
@@ -64,9 +69,20 @@ async function main() {
     staticPath: join(repoRoot, 'web', 'dist'),
     port: Number(process.env.FF_PORT ?? 4444),
     disableSim: true,
+    simbriefFixturePath: planFixturePath ?? undefined,
   });
 
   running.aggregator.setConnected(true);
+
+  if (planFixturePath) {
+    try {
+      const { plan } = await loadOfpFromFile(planFixturePath);
+      running.aggregator.setPlan(plan);
+      console.log(`[replay] loaded plan fixture from ${planFixturePath}`);
+    } catch (err) {
+      console.warn(`[replay] could not load plan fixture at ${planFixturePath}:`, (err as Error).message);
+    }
+  }
 
   const start0 = Date.now();
   let i = 0;
@@ -84,7 +100,10 @@ async function main() {
   };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
-  console.log(`replay running at tick=${tickMs}ms, events=${events.length}${skipped ? `, skipped=${skipped}` : ''}`);
+  console.log(
+    `replay running at tick=${tickMs}ms, events=${events.length}${skipped ? `, skipped=${skipped}` : ''}` +
+      (planFixturePath ? `, plan=${planFixturePath}` : ', plan=none'),
+  );
 }
 
 main().catch((err) => {
