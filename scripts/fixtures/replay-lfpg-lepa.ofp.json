@@ -1,0 +1,204 @@
+{
+  "general": {
+    "icao_airline": "EWG",
+    "flight_number": "1658",
+    "initial_altitude": "37000",
+    "air_distance": "659",
+    "route_distance": "639",
+    "route": "ERIX6Z ERIXU DCT ETAMO DCT VALKU DCT ATSUP DCT MINSO DCT DEGOL DCT PPG DCT ALBER P84 LORES LORE1R",
+    "route_navigraph": "ERIX6Z ERIXU DCT ETAMO DCT VALKU DCT ATSUP DCT MINSO DCT DEGOL DCT PPG DCT ALBER P84 LORES LORE1R"
+  },
+  "aircraft": {
+    "icao_code": "A20N"
+  },
+  "origin": {
+    "icao_code": "LFPG",
+    "pos_lat": "49.009722",
+    "pos_long": "2.547778",
+    "name": "CHARLES-DE-GAULLE"
+  },
+  "destination": {
+    "icao_code": "LEPA",
+    "pos_lat": "39.551667",
+    "pos_long": "2.738889",
+    "name": "PALMA DE MALLORCA"
+  },
+  "alternate": {
+    "icao_code": "LEBL",
+    "pos_lat": "41.296944",
+    "pos_long": "2.078333",
+    "name": "JOSEP TARRADELLAS/EL PRAT"
+  },
+  "times": {
+    "sched_out": "1777722600",
+    "sched_in": "1777730100",
+    "sched_block": "7500",
+    "est_block": "7753"
+  },
+  "navlog": {
+    "fix": [
+      {
+        "ident": "DE27R",
+        "pos_lat": "49.024719",
+        "pos_long": "2.524892",
+        "altitude_feet": "1900"
+      },
+      {
+        "ident": "PG270",
+        "pos_lat": "49.015361",
+        "pos_long": "2.416611",
+        "altitude_feet": "4100"
+      },
+      {
+        "ident": "PG290",
+        "pos_lat": "49.069417",
+        "pos_long": "2.365000",
+        "altitude_feet": "7100"
+      },
+      {
+        "ident": "PON",
+        "pos_lat": "49.096083",
+        "pos_long": "2.035889",
+        "altitude_feet": "14300"
+      },
+      {
+        "ident": "RBT",
+        "pos_lat": "48.653944",
+        "pos_long": "1.994222",
+        "altitude_feet": "24500"
+      },
+      {
+        "ident": "EDOXA",
+        "pos_lat": "48.290833",
+        "pos_long": "2.209444",
+        "altitude_feet": "29600"
+      },
+      {
+        "ident": "ERIXU",
+        "pos_lat": "48.083333",
+        "pos_long": "2.259722",
+        "altitude_feet": "31800"
+      },
+      {
+        "ident": "TOC",
+        "pos_lat": "47.517561",
+        "pos_long": "2.295579",
+        "altitude_feet": "37000"
+      },
+      {
+        "ident": "ETAMO",
+        "pos_lat": "46.840278",
+        "pos_long": "2.337500",
+        "altitude_feet": "37000"
+      },
+      {
+        "ident": "VALKU",
+        "pos_lat": "45.998167",
+        "pos_long": "2.818056",
+        "altitude_feet": "39000"
+      },
+      {
+        "ident": "ATSUP",
+        "pos_lat": "45.742750",
+        "pos_long": "2.952694",
+        "altitude_feet": "39000"
+      },
+      {
+        "ident": "MINSO",
+        "pos_lat": "44.848389",
+        "pos_long": "2.929222",
+        "altitude_feet": "39000"
+      },
+      {
+        "ident": "DEGOL",
+        "pos_lat": "43.780556",
+        "pos_long": "2.852194",
+        "altitude_feet": "39000"
+      },
+      {
+        "ident": "PPG",
+        "pos_lat": "42.750472",
+        "pos_long": "2.867139",
+        "altitude_feet": "39000"
+      },
+      {
+        "ident": "ALBER",
+        "pos_lat": "42.451500",
+        "pos_long": "2.832111",
+        "altitude_feet": "39000"
+      },
+      {
+        "ident": "GIR",
+        "pos_lat": "41.931250",
+        "pos_long": "2.771861",
+        "altitude_feet": "39000"
+      },
+      {
+        "ident": "NENDA",
+        "pos_lat": "41.684444",
+        "pos_long": "2.751389",
+        "altitude_feet": "39000"
+      },
+      {
+        "ident": "KUREG",
+        "pos_lat": "40.899167",
+        "pos_long": "2.718889",
+        "altitude_feet": "39000"
+      },
+      {
+        "ident": "TOD",
+        "pos_lat": "40.849225",
+        "pos_long": "2.716838",
+        "altitude_feet": "39000"
+      },
+      {
+        "ident": "LORES",
+        "pos_lat": "40.500000",
+        "pos_long": "2.702583",
+        "altitude_feet": "31700"
+      },
+      {
+        "ident": "POSBA",
+        "pos_lat": "40.219806",
+        "pos_long": "2.905222",
+        "altitude_feet": "25100"
+      },
+      {
+        "ident": "NUDSA",
+        "pos_lat": "40.048056",
+        "pos_long": "3.028889",
+        "altitude_feet": "20900"
+      },
+      {
+        "ident": "XOTNU",
+        "pos_lat": "39.833333",
+        "pos_long": "2.933611",
+        "altitude_feet": "16000"
+      },
+      {
+        "ident": "TAKUS",
+        "pos_lat": "39.774444",
+        "pos_long": "2.821389",
+        "altitude_feet": "13900"
+      },
+      {
+        "ident": "EVOLI",
+        "pos_lat": "39.715556",
+        "pos_long": "2.709722",
+        "altitude_feet": "11800"
+      },
+      {
+        "ident": "ADX",
+        "pos_lat": "39.549444",
+        "pos_long": "2.395861",
+        "altitude_feet": "5600"
+      },
+      {
+        "ident": "LEPA",
+        "pos_lat": "39.551667",
+        "pos_long": "2.738889",
+        "altitude_feet": "2500"
+      }
+    ]
+  }
+}
