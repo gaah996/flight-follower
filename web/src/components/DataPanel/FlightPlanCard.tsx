@@ -229,9 +229,7 @@ export function FlightPlanCard() {
             variant="secondary"
             onClick={() => setExpanded((v) => !v)}
             title={expanded ? 'Click to collapse' : 'Click to expand'}
-            className={`rounded-lg py-1 px-2 ml-[-8px] mr-[-8px] text-xs cursor-pointer ${
-              expanded ? '' : 'line-clamp-2 max-h-[2.5rem] overflow-hidden'
-            }`}
+            className="rounded-lg py-1 px-2 ml-[-8px] mr-[-8px] text-xs cursor-pointer"
             style={{
               fontFamily: 'ui-monospace, monospace',
               color: 'var(--ff-fg-muted)',
@@ -244,7 +242,7 @@ export function FlightPlanCard() {
               whiteSpace: 'normal',
             }}
           >
-            {plan.routeString}
+            <div className={expanded ? '' : 'line-clamp-2'}>{plan.routeString}</div>
           </Surface>
         </Card.Footer>
       )}
