@@ -198,14 +198,14 @@ export function FlightPlanCard() {
           {plan.alternate && (
             <Tooltip>
               <TooltipTrigger>
-                <span
-                  className="inline-flex"
+                <Chip
+                  size="sm"
+                  variant="soft"
+                  color="default"
                   aria-label={`Alternate: ${plan.alternate.name ?? plan.alternate.icao}`}
                 >
-                  <Chip size="sm" variant="soft" color="default">
-                    <Chip.Label>alt {plan.alternate.icao}</Chip.Label>
-                  </Chip>
-                </span>
+                  <Chip.Label>alt {plan.alternate.icao}</Chip.Label>
+                </Chip>
               </TooltipTrigger>
               <TooltipContent>
                 {plan.alternate.name ?? `Alternate: ${plan.alternate.icao}`}
