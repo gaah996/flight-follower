@@ -197,7 +197,7 @@ export function FlightPlanCard() {
           <Card.Description>{callsign}</Card.Description>
           {plan.alternate && (
             <Tooltip>
-              <TooltipTrigger>
+              <TooltipTrigger className="flex">
                 <Chip
                   size="sm"
                   variant="soft"
