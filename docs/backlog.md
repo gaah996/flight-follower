@@ -18,8 +18,8 @@ These are not "deferred" — they are scheduled. The structure below was set dur
 - *From v0.3.0 polish backlog:* cost index / cruise Mach / avg forecast HD-TL on FlightPlanCard; local time at origin/destination; sunrise/sunset at destination; wind compass refinements (proportional arrow, HD/TL color cue, instrument-glass feel); parking-brake indicator.
 - Clock fallback to real time after a sim-disconnect grace period.
 - Actuals: compute OUT/OFF/ON/IN from the on-ground boolean.
-- *Polish from v0.4.0 retro:* prevent airport tooltip overlap with the route line; restyle Fetch button (soft blue, full-width, inside Trip section).
-- *Architectural rework from v0.4.0 retro:* multi-signal waypoint reconciliation (cross-track + along-track + heading/track alignment + altitude consistency + cursor continuity), replacing the close-pass + closest-leg trio with a scored candidate-leg system. See `~/.claude/projects/-Users-gabriel-castro-repos-local-flight-follower/memory/project_v1_4_waypoint_rework.md`.
+- *Polish from v0.4.1 retro:* prevent airport tooltip overlap with the route line; restyle Fetch button (soft blue, full-width, inside Trip section).
+- *Architectural rework from v0.4.1 retro:* multi-signal waypoint reconciliation (cross-track + along-track + heading/track alignment + altitude consistency + cursor continuity), replacing the close-pass + closest-leg trio with a scored candidate-leg system.
 
 ### v0.6.0 — Multi-device / Responsive
 

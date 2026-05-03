@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-v0.2.0 is a focused polish-and-bugfix release on top of shipped v1. It fixes a handful of irritations the user hit in real flights and lands small, isolated UX wins that do not depend on a redesign. None of the items require a styling overhaul or a component library — those land in v0.3.0.
+v0.2.0 is a focused polish-and-bugfix release on top of shipped v0.1.0. It fixes a handful of irritations the user hit in real flights and lands small, isolated UX wins that do not depend on a redesign. None of the items require a styling overhaul or a component library — those land in v0.3.0.
 
 The release is intentionally narrow. Everything that touches the visual system (component library, dark mode, panel layout, compass widget, map style, flight-info card) is deferred to v0.3.0 so we can do that pass with one coherent design eye instead of restyling twice. Everything that builds on the planned-route mechanics (skip-waypoint, TOC/TOD markers, altitude-coded breadcrumb, progress timeline) is deferred to v0.4.0 so it sits on top of v0.3.0's foundation.
 
