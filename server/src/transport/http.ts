@@ -2,7 +2,7 @@ import { writeFile } from 'node:fs/promises';
 import Fastify, { type FastifyInstance } from 'fastify';
 import fastifyStatic from '@fastify/static';
 import { loadSettings, saveSettings } from '../config/settings.js';
-import { fetchLatestOfp, loadOfpFromFile, siblingOfpPath, SimbriefError } from '../simbrief/client.js';
+import { fetchLatestOfp, loadOfpFromFile, siblingOfpPath, SimbriefError, trimOfpForFixture } from '../simbrief/client.js';
 import type { Aggregator } from '../state/aggregator.js';
 import { ResetBodySchema, SettingsBodySchema } from './schemas.js';
 
@@ -89,7 +89,7 @@ export async function buildHttpApp(opts: HttpOptions): Promise<FastifyInstance> 
       if (opts.recordPath) {
         const ofpPath = siblingOfpPath(opts.recordPath);
         try {
-          await writeFile(ofpPath, JSON.stringify(raw, null, 2), 'utf8');
+          await writeFile(ofpPath, JSON.stringify(trimOfpForFixture(raw), null, 2), 'utf8');
         } catch (writeErr) {
           // Best-effort: don't fail the response, but warn loudly. Aligned
           // with the existing recorder's "don't crash the server" stance.

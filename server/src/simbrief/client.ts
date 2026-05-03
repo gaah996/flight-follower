@@ -84,3 +84,77 @@ export function siblingOfpPath(filePath: string): string {
   const stem = dot > 0 ? base.slice(0, dot) : base;
   return `${dir}${stem}.ofp.json`;
 }
+
+type RawObj = Record<string, unknown>;
+
+function pickFields<T extends string>(obj: unknown, keys: readonly T[]): RawObj | undefined {
+  if (typeof obj !== 'object' || obj === null) return undefined;
+  const o = obj as RawObj;
+  const out: RawObj = {};
+  let any = false;
+  for (const k of keys) {
+    if (k in o) {
+      out[k] = o[k];
+      any = true;
+    }
+  }
+  return any ? out : undefined;
+}
+
+const GENERAL_KEYS = [
+  'icao_airline',
+  'flight_number',
+  'initial_altitude',
+  'air_distance',
+  'route_distance',
+  'route',
+  'route_navigraph',
+] as const;
+const AIRCRAFT_KEYS = ['icao_code'] as const;
+const AIRPORT_KEYS = ['icao_code', 'pos_lat', 'pos_long', 'name'] as const;
+const TIMES_KEYS = ['sched_out', 'sched_in', 'sched_block', 'est_block'] as const;
+const FIX_KEYS = ['ident', 'pos_lat', 'pos_long', 'altitude_feet'] as const;
+
+/**
+ * Reduce a raw Simbrief OFP to only the fields parseSimbriefOfp consumes.
+ * Used when persisting OFPs as fixtures (during dev recording or as
+ * checked-in test fixtures) to:
+ *   - drop personal identifiers (userid, user_id, request_id, sequence_id,
+ *     xml_file URL containing the userid, etc.) that Simbrief returns;
+ *   - shrink the file from hundreds of kB to a few kB;
+ *   - keep the saved file shape parser-compatible: the result still parses
+ *     cleanly via parseSimbriefOfp(...) because every field consumed by
+ *     the parser is preserved.
+ */
+export function trimOfpForFixture(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null) return raw;
+  const r = raw as RawObj;
+  const trimmed: RawObj = {};
+
+  const general = pickFields(r.general, GENERAL_KEYS);
+  if (general) trimmed.general = general;
+
+  const aircraft = pickFields(r.aircraft, AIRCRAFT_KEYS);
+  if (aircraft) trimmed.aircraft = aircraft;
+
+  const origin = pickFields(r.origin, AIRPORT_KEYS);
+  if (origin) trimmed.origin = origin;
+  const destination = pickFields(r.destination, AIRPORT_KEYS);
+  if (destination) trimmed.destination = destination;
+  const alternate = pickFields(r.alternate, AIRPORT_KEYS);
+  if (alternate) trimmed.alternate = alternate;
+
+  const times = pickFields(r.times, TIMES_KEYS);
+  if (times) trimmed.times = times;
+
+  if (typeof r.navlog === 'object' && r.navlog !== null) {
+    const fixRaw = (r.navlog as RawObj).fix;
+    if (Array.isArray(fixRaw)) {
+      trimmed.navlog = {
+        fix: fixRaw.map((f) => pickFields(f, FIX_KEYS) ?? {}),
+      };
+    }
+  }
+
+  return trimmed;
+}
